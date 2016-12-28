@@ -32,6 +32,7 @@ all_sprites.add(car)
 beam_length = 500
 no_of_beams = 100
 lidar = lidar.Lidar(beam_length, no_of_beams, 220, car.rect.centerx, car.rect.centery, math.degrees(car.heading), 10)
+car.attachLidar(lidar)
 
 #init obstacles
 for i in range(random.randint(1,5)):
@@ -65,7 +66,20 @@ while running:
         
     # Collisions
     collisions = pygame.sprite.spritecollide(car, obstacles, False)
-    lidar_hits = lidar.update(car.rect.centerx, car.rect.centery, math.degrees(car.heading), obstacles)
+    
+    # sensor update
+    for obs in obstacles:
+        obs.resetUrgency()
+        
+    lidar_hits = car.updateSensors(obstacles) 
+    
+    reward = 0
+    for obs in obstacles:
+        reward += CONST.REWARDS[CONST.URGENCY[obs.urgency]]
+        print('urgency: {0}'.format(CONST.URGENCY[obs.urgency]))
+        if obs.out_of_range:
+            obs.initHeading(car.rect.centerx, car.rect.centery, beam_length)
+    print('reward: {0}'.format(reward))
     
     #update history
     lidar_history[history_idx] = lidar_hits
@@ -80,17 +94,23 @@ while running:
         #Sprites
     all_sprites.draw(screen)
     
-#   Check if obstacles are out of range
-    for obs in obstacles:
-        if obs.out_of_range:
-            obs.initHeading(car.rect.centerx, car.rect.centery, beam_length)
-    
+##   Check if obstacles are out of range
+#    print('line')
+#    reward = 0
+#    for obs in obstacles:
+#        print('urgency: {0}'.format(CONST.URGENCY[obs.urgency]))
+#        reward += CONST.REWARDS[CONST.URGENCY[obs.urgency]]
+#        if obs.out_of_range:
+#            obs.initHeading(car.rect.centerx, car.rect.centery, beam_length)
+#    print('reward: {0}'.format(reward))
 #   Draw goal
-    pygame.draw.circle(screen, CONST.COLOR_WHITE, (car.goal), 10)    
+    pygame.draw.circle(screen, CONST.COLOR_WHITE, (car.goal), 10) 
+    
 #   DRAW MOST RECENT Lidar
+#   lidar_hits is an array of [x, y, 'state'].
     for hit in lidar_hits:
         pygame.draw.line(screen, hit[2], (hit[0], hit[1]), (car.rect.centerx, car.rect.centery))
-
+    
 #    DRAW ENTIRE Lidar HISTORY
 #    for ele in lidar_history:
 #        for hit in ele:

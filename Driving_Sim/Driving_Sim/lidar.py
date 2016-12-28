@@ -14,9 +14,11 @@ class Lidar(pygame.sprite.Sprite):
         
         
     def update(self, anchorX, anchorY, anchor_deg, obstacle_list):
-        result = []
+        beam_data = []
+
         for b in self.beams:
             b.setAnchorPoint(anchorX, anchorY, anchor_deg)
-            result.append(b.update(obstacle_list))
+            temp = b.update(obstacle_list)
+            beam_data.append(temp)
             
-        return result
+        return beam_data

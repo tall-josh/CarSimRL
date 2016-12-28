@@ -3,12 +3,13 @@ import pygame
 import random
 import constants as CONST
 import math
+import lidar
 
 class Car(pygame.sprite.Sprite):
     # Sprite for the player
     def __init__(self, img_file):
         pygame.sprite.Sprite.__init__(self)
-        
+        self.lidar = None #need to attach using attachLidar(self, lidar)
         self.image = pygame.image.load(img_file)
         self.__image_master = self.image
         self.rect = self.image.get_rect()
@@ -31,10 +32,17 @@ class Car(pygame.sprite.Sprite):
             if (math.sqrt((a*a)+(b*b))) > min_dist:
                 goal_valid = True
         
+#       PID Setup
         self.P = 0.05
         self.I = 0
         self.D = 0
-                
+
+#       Q-Learning Current Reward
+        self.reward = 0
+            
+    def attachLidar(self, to_attach):
+        self.lidar = to_attach
+        
     def linearDistribution(self, x, in_min=0, in_max=255, out_min=-33, out_max=33):
         return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min
         
@@ -48,30 +56,34 @@ class Car(pygame.sprite.Sprite):
         delta_rad =  rad_to_goal - self.heading
         delta_rad = math.atan2(math.sin(delta_rad), math.cos(delta_rad))
         self.heading += (self.P * delta_rad) + (self.I * delta_time * delta_time) + (self.D * delta_rad/delta_time)
-        print('Head: {0}, ToGoal: {1}, Diff: {2}'.format(math.degrees(self.heading), math.degrees(rad_to_goal), (math.degrees(delta_rad))))
+        #print('Head: {0}, ToGoal: {1}, Diff: {2}'.format(math.degrees(self.heading), math.degrees(rad_to_goal), (math.degrees(delta_rad))))
         if math.sqrt((dx*dx)+(dy*dy)) < 20:
             self.at_goal = True
-        
+    #car.rect.centerx, car.rect.centery, math.degrees(car.heading), obstacles
+    def updateSensors(self, obstacles):
+        return self.lidar.update(self.rect.centerx, self.rect.centery, math.degrees(self.heading), obstacles)
+    
     def update(self):
+#       self.doPID(1/30)
+#       self.speed = CONST.CAR_MAX_SPEED
         keystate = pygame.key.get_pressed()
-        self.doPID(1/30)
-#        if keystate:
-#            #steering
-#            if  keystate[pygame.K_LEFT]:
-#                self.heading += CONST.CAR_ANGULAR_ACCEL
-#            if keystate[pygame.K_RIGHT]:
-#                self.heading -= CONST.CAR_ANGULAR_ACCEL
-#            
-#            #acceleration
-#            if keystate[pygame.K_UP]:
-#                self.speed += CONST.CAR_FORWARD_ACCEL
-#                if self.speed > CONST.CAR_MAX_SPEED:
-#                    self.speed = CONST.CAR_MAX_SPEED
-#            if not keystate[pygame.K_UP]:
-#                self.speed -= CONST.CAR_FORWARD_ACCEL
-#                if self.speed < 0:
-#                    self.speed = 0
-        self.speed = CONST.CAR_MAX_SPEED
+        if keystate:
+            #steering
+            if  keystate[pygame.K_LEFT]:
+                self.heading += CONST.CAR_ANGULAR_ACCEL
+            if keystate[pygame.K_RIGHT]:
+                self.heading -= CONST.CAR_ANGULAR_ACCEL
+            
+            #acceleration
+            if keystate[pygame.K_UP]:
+                self.speed += CONST.CAR_FORWARD_ACCEL
+                if self.speed > CONST.CAR_MAX_SPEED:
+                    self.speed = CONST.CAR_MAX_SPEED
+            if not keystate[pygame.K_UP]:
+                self.speed -= CONST.CAR_FORWARD_ACCEL
+                if self.speed < 0:
+                    self.speed = 0
+        
         self.velx = self.speed * (math.cos(self.heading))
         self.vely = self.speed * (math.sin(self.heading))
        
