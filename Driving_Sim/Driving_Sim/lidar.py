@@ -1,8 +1,5 @@
 # -*- coding: utf-8 -*-
 import pygame
-import random
-import constants as CONST
-import math
 import beam
 
 class Lidar(pygame.sprite.Sprite):
@@ -12,13 +9,7 @@ class Lidar(pygame.sprite.Sprite):
             b = beam.Beam(length, number_of_beams, sweep_ang_deg, i, anchorX, anchorY, anchor_deg, resolution)
             self.beams.append(b)
         
-        
     def update(self, anchorX, anchorY, anchor_deg, obstacle_list):
-        beam_data = []
-
         for b in self.beams:
-            b.setAnchorPoint(anchorX, anchorY, anchor_deg)
-            temp = b.update(obstacle_list)
-            beam_data.append(temp)
-            
-        return beam_data
+            b.update(anchorX, anchorY, anchor_deg, obstacle_list)
+    

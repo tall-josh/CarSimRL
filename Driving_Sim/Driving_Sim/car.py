@@ -3,14 +3,15 @@ import pygame
 import random
 import constants as CONST
 import math
+import game_art as art
 import lidar
 
 class Car(pygame.sprite.Sprite):
     # Sprite for the player
-    def __init__(self, img_file):
+    def __init__(self):
         pygame.sprite.Sprite.__init__(self)
         self.lidar = None #need to attach using attachLidar(self, lidar)
-        self.image = pygame.image.load(img_file)
+        self.image = pygame.image.load(art.cars['player'])
         self.__image_master = self.image
         self.rect = self.image.get_rect()
         self.rect.center = (0,0)
@@ -20,6 +21,8 @@ class Car(pygame.sprite.Sprite):
         self.heading = 0#math.radians(random.randint(0,359))
         self.goal = (0,0)
         self.at_goal = False
+        self.command_array = (0,0,0) #(stearing, acceleation, breaking)
+        self.sensor_data = []
         
         goal_valid = False
         while not goal_valid:
@@ -59,48 +62,56 @@ class Car(pygame.sprite.Sprite):
         #print('Head: {0}, ToGoal: {1}, Diff: {2}'.format(math.degrees(self.heading), math.degrees(rad_to_goal), (math.degrees(delta_rad))))
         if math.sqrt((dx*dx)+(dy*dy)) < 20:
             self.at_goal = True
-    #car.rect.centerx, car.rect.centery, math.degrees(car.heading), obstacles
+
     def updateSensors(self, obstacles):
-        return self.lidar.update(self.rect.centerx, self.rect.centery, math.degrees(self.heading), obstacles)
+        self.sensor_data = self.lidar.update(self.rect.centerx, self.rect.centery, math.degrees(self.heading), obstacles)
     
+    def inputComand(self, command_array):
+        self.command_array = command_array
+        
     def update(self):
-#       self.doPID(1/30)
-#       self.speed = CONST.CAR_MAX_SPEED
-        keystate = pygame.key.get_pressed()
-        if keystate:
-            #steering
-            if  keystate[pygame.K_LEFT]:
-                self.heading += CONST.CAR_ANGULAR_ACCEL
-            if keystate[pygame.K_RIGHT]:
-                self.heading -= CONST.CAR_ANGULAR_ACCEL
+       if all(x == 0 for x in self.command_array):
+           self.doPID(1/CONST.SCREEN_FPS)
+           self.speed = CONST.CAR_MAX_SPEED    
+       else:
+           #Reset command array
+           self.command_array = (0,0,0)
+    
+       self.velx = self.speed * (math.cos(self.heading))
+       self.vely = self.speed * (math.sin(self.heading))
+           
+       self.heading = math.atan2(math.sin(self.heading), math.cos(self.heading))
+                
+       #old centre to realign after rotation
+       old_cen = self.rect.center
+       #perform rotation
+       self.image = pygame.transform.rotate(self.__image_master, math.degrees(self.heading))
+       self.rect = self.image.get_rect()
+       self.rect.center = old_cen
+        
+       self.rect.x += self.velx
+       self.rect.y -= self.vely
+           
+        
+    #        keystate = pygame.key.get_pressed()
+#        if keystate:
+#            #steering
+#            if  keystate[pygame.K_LEFT]:
+#                self.heading += CONST.CAR_ANGULAR_ACCEL
+#            if keystate[pygame.K_RIGHT]:
+#                self.heading -= CONST.CAR_ANGULAR_ACCEL
+#            
+#            #acceleration
+#            if keystate[pygame.K_UP]:
+#                self.speed += CONST.CAR_FORWARD_ACCEL
+#                if self.speed > CONST.CAR_MAX_SPEED:
+#                    self.speed = CONST.CAR_MAX_SPEED
+#            if not keystate[pygame.K_UP]:
+#                self.speed -= CONST.CAR_FORWARD_ACCEL
+#                if self.speed < 0:
+#                    self.speed = 0
+
             
-            #acceleration
-            if keystate[pygame.K_UP]:
-                self.speed += CONST.CAR_FORWARD_ACCEL
-                if self.speed > CONST.CAR_MAX_SPEED:
-                    self.speed = CONST.CAR_MAX_SPEED
-            if not keystate[pygame.K_UP]:
-                self.speed -= CONST.CAR_FORWARD_ACCEL
-                if self.speed < 0:
-                    self.speed = 0
-        
-        self.velx = self.speed * (math.cos(self.heading))
-        self.vely = self.speed * (math.sin(self.heading))
-       
-        self.heading = math.atan2(math.sin(self.heading), math.cos(self.heading))
-            
-        #old centre to realign after rotation
-        old_cen = self.rect.center
-        #perform rotation
-        self.image = pygame.transform.rotate(self.__image_master, math.degrees(self.heading))
-        self.rect = self.image.get_rect()
-        self.rect.center = old_cen
-        
-        self.rect.x += self.velx
-        self.rect.y -= self.vely
-        
-    #del getLidar():
-        
 
         
 

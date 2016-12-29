@@ -15,28 +15,21 @@ class Obstacle(pygame.sprite.Sprite):
         self.rect.center = (0,0)#(random.randint(-100, CONST.SCREEN_WIDTH + 100), random.randint(-100, CONST.SCREEN_HEIGHT+100))            
         self.heading = 0#random.randint(0,359)
         self.speed = 0#random.randint(CONST.OBSTACLE_MIN_SPEED, CONST.OBSTACLE_MAX_SPEED)
-        self.initHeading(playerX, playerY, lidar_range)
+        self.initState(playerX, playerY, lidar_range)
         self.out_of_range = False
-        self.urgency = 0
         
-    def initHeading(self, playerX, playerY, lidar_range):
+    def initState(self, playerX, playerY, lidar_range):
         
         self.rect.center = (random.randint(-100, CONST.SCREEN_WIDTH + 100), random.randint(-100, CONST.SCREEN_HEIGHT+100))            
         a = self.rect.centerx - playerX
         b = self.rect.centery - playerY
         dist_to_player = math.sqrt((a*a)+(b*b))
         if dist_to_player < lidar_range:
-            self.initHeading(playerX, playerY, lidar_range)
+            self.initState(playerX, playerY, lidar_range)
         
         self.heading = random.randint(0,359)
-        self.speed = 0#random.randint(CONST.OBSTACLE_MIN_SPEED, CONST.OBSTACLE_MAX_SPEED)
+        self.speed = random.randint(CONST.OBSTACLE_MIN_SPEED, CONST.OBSTACLE_MAX_SPEED)
     
-    def resetUrgency(self):
-        self.urgency = 0
-        
-    def tag(self, urgency_new):
-        if urgency_new > self.urgency:
-            self.urgency = urgency_new
         
     def update(self):
             
