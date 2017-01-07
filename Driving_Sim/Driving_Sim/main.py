@@ -23,15 +23,18 @@ screen.fill(CONST.COLOR_BLUE)
 pygame.display.set_caption("My Game")
 clock = pygame.time.Clock()
 
+# Creating sprites
+all_sprites = pygame.sprite.Group()
+
+#create obstacles
+obstacles = pygame.sprite.Group()
+
 # Create Agent and attach sensors
 car = car.Car()
 
-beam_length = 500
-no_of_beams = 100
-sweep_range_deg = 220
-lidar_res = 10
-lidar = lidar.Lidar(beam_length, no_of_beams, sweep_range_deg, car.rect.centerx, car.rect.centery, math.degrees(car.heading), lidar_res)
+lidar = lidar.Lidar(car.rect.centerx, car.rect.centery, math.degrees(car.heading))
 car.attachLidar(lidar)
+all_sprites.add(car)
 
 #setting up lidar_history
 lidar_history = []
@@ -40,18 +43,15 @@ for i in range(history_depth):
     lidar_history.append([])
 history_idx = 0   # current frame being written to
 
-# Creating sprites
-all_sprites = pygame.sprite.Group()
-obstacles = pygame.sprite.Group()
-all_sprites.add(car)
-
 #init obstacles
 for i in range(random.randint(1,5)):
-    obs = obstacle.Obstacle(art.cars['gray'],car.rect.centerx, car.rect.centery, beam_length)
+    obs = obstacle.Obstacle(art.cars['gray'],car.rect.centerx, car.rect.centery, CONST.LIDAR_RANGE)
     all_sprites.add(obs)
     obstacles.add(obs)
                  
 # Game Loop
+score = 0
+count  = 0
 running = True
 while running:
     # keep loop time constant
@@ -81,16 +81,14 @@ while running:
     if history_idx == history_depth:
         history_idx = 0
     
-    count  = 0
+    
     for obs in obstacles:
         if obs.out_of_range:
-            obs.initState(car.rect.centerx, car.rect.centery, beam_length)
+            obs.initState(car.rect.centerx, car.rect.centery, CONST.LIDAR_RANGE)
         if obs.tag:
             count += 1
             obs.tag = False
             
-    print("Count: {0}".format(count))
-    print("Closest: {0}".format(car.lidar.closest_dist))
 #    Draw / render
     all_sprites.draw(screen)
     
@@ -106,9 +104,19 @@ while running:
 #        for hit in ele:
 #            pygame.draw.line(screen, hit[2], (hit[0], hit[1]), (car.rect.centerx, car.rect.centery))
     
-    if collisions or car.at_goal:
+    if collisions:
         running = False
-        
+        score += CONST.REWARDS["terminal_crash"]
+        print("Terminal Reward (COLLISION): {0}".format(CONST.REWARDS["terminal_crash"]))
+    if car.at_goal:
+        running = False
+        score += CONST.REWARDS["terminal_goal"]
+        print("Terminal Reward (AT GOAL): {0}".format(CONST.REWARDS["terminal_goal"]))
+
+    print("Count: {0}, Closest {1}, Lidar_Reward: {2}".format(count, car.lidar.closest_dist, car.lidar.reward))
+    score += car.lidar.reward
+    print("Score: {0}".format(score))
+
     # After everything, flip display
     pygame.display.flip()
 pygame.quit();

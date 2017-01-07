@@ -29,10 +29,16 @@ CAR_MAX_SPEED = 5
 OBSTACLE_MAX_SPEED = 10
 OBSTACLE_MIN_SPEED = 3
 
+LIDAR_RANGE =  500
+LIDAR_COUNT = 100
+LIDAR_SWEEP = 220
+LIDAR_RES = 10
+LIDAR_STEP = LIDAR_SWEEP / (LIDAR_COUNT - 1)
+
 URGENCY = {0: 'out_of_range',
           1: 'safe',
           2: 'uneasy',
-          3: 'dagerous',
+          3: 'dangerous',
           4: 'emergency',
           5: 'terminal_goal',
           6: 'terminal_crash'}
@@ -40,8 +46,8 @@ URGENCY = {0: 'out_of_range',
 REWARDS =           {URGENCY[0] :   0,
                      URGENCY[1] :  -1,
                      URGENCY[2] :  -2,
-                     URGENCY[3] :  -5,
-                     URGENCY[4] :  -7,
+                     URGENCY[3] :  -4,
+                     URGENCY[4] :  -8,
                      URGENCY[5] :  10,
                      URGENCY[6] : -10}
 
