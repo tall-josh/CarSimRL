@@ -63,7 +63,9 @@ while running:
         #check for closing window
         if event.type == pygame.QUIT:
             running = False
-
+     
+    keystate = pygame.key.get_pressed()
+       
     # Update
     all_sprites.update()
         
@@ -79,11 +81,16 @@ while running:
     if history_idx == history_depth:
         history_idx = 0
     
-        
+    count  = 0
     for obs in obstacles:
         if obs.out_of_range:
             obs.initState(car.rect.centerx, car.rect.centery, beam_length)
+        if obs.tag:
+            count += 1
+            obs.tag = False
             
+    print("Count: {0}".format(count))
+    print("Closest: {0}".format(car.lidar.closest_dist))
 #    Draw / render
     all_sprites.draw(screen)
     

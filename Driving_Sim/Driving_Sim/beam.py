@@ -31,6 +31,7 @@ class Beam(pygame.sprite.Sprite):
                 self.y1 = anchorY + (step * math.sin(math.radians(self.beam_idx*self.step_ang - anchor_deg + self.start_ang_deg - 90)))
                 if obs.rect.collidepoint(self.x1, self.y1):
                     self.dist = step
+                    obs.tag = True
 #                   select color for different ranges
                     if 0 < step <= self.max_range * 0.25:
                         self.color = CONST.COLOR_RED

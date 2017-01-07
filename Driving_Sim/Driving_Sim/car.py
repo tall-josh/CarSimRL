@@ -49,8 +49,8 @@ class Car(pygame.sprite.Sprite):
     def linearDistribution(self, x, in_min=0, in_max=255, out_min=-33, out_max=33):
         return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min
         
-    def inputCommand(self, steering_input):
-        self.heading += self.linearDistribution(steering_input) * CONST.ONE_DEGREE
+    def inputCommand(self, input_array):
+        self.heading += self.linearDistribution(input_array) * CONST.ONE_DEGREE
   
     def doPID(self, delta_time):
         dx = self.goal[0] - self.rect.centerx
@@ -66,15 +66,19 @@ class Car(pygame.sprite.Sprite):
     def updateSensors(self, obstacles):
         self.sensor_data = self.lidar.update(self.rect.centerx, self.rect.centery, math.degrees(self.heading), obstacles)
     
-    def inputComand(self, command_array):
-        self.command_array = command_array
-        
+    
     def update(self):
+#      reset rewards
+       self.reward = 0
+       
+#      check if input has been made (negative reward to override controls)
        if all(x == 0 for x in self.command_array):
            self.doPID(1/CONST.SCREEN_FPS)
-           self.speed = CONST.CAR_MAX_SPEED    
+           self.speed = CONST.CAR_MAX_SPEED
+           self.reward -= 1
+#      if no input remain in PID mode
        else:
-           #Reset command array
+#      Reset command array
            self.command_array = (0,0,0)
     
        self.velx = self.speed * (math.cos(self.heading))
@@ -92,7 +96,7 @@ class Car(pygame.sprite.Sprite):
        self.rect.x += self.velx
        self.rect.y -= self.vely
            
-        
+       
     #        keystate = pygame.key.get_pressed()
 #        if keystate:
 #            #steering
