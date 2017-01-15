@@ -1,0 +1,79 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Sun Dec 11 16:20:00 2016
+
+@author: Josh
+"""
+
+#colors
+COLOR_RED = (255,0,0)
+COLOR_GREEN = (0,255,0)
+COLOR_BLUE = (0,0,255)
+COLOR_BLACK = (0,0,0)
+COLOR_WHITE = (255,255,255)
+COLOR_ORANGE = (255,102,0)
+COLOR_YELLOW = (255,255,0)
+
+#screen
+SCREEN_WIDTH = 1400
+SCREEN_HEIGHT = 700
+SCREEN_SIZE = (SCREEN_WIDTH, SCREEN_HEIGHT)
+SCREEN_FPS = 60
+
+
+ONE_DEGREE = 3.14159 / 180.0
+CAR_ANGULAR_ACCEL = ONE_DEGREE * 1
+CAR_FORWARD_ACCEL = 0.5
+CAR_MAX_SPEED = 5.0
+
+OBSTACLE_MAX_SPEED = 10
+OBSTACLE_MIN_SPEED = 3
+MAX_NUMBER_OF_OBSTACLES = 5
+
+LIDAR_RANGE =  500
+LIDAR_COUNT = 50
+LIDAR_SWEEP = 220
+LIDAR_RES = 5 # one pixle is approx 10cm
+LIDAR_STEP = LIDAR_SWEEP / (LIDAR_COUNT - 1)
+LIDAR_GRAYSCALE_SIZE = (LIDAR_COUNT, (LIDAR_RANGE // LIDAR_RES))
+
+HISTORY_DEPTH = 4
+STATE_MATRIX_SIZE = (HISTORY_DEPTH, LIDAR_COUNT, (LIDAR_RANGE // LIDAR_RES))
+
+ACTION_AND_COSTS = [('do_nothing',           0),
+                    ('soft_left',           -1),
+                    ('medium_left',         -3),
+                    ('hard_left',           -6),
+                    ('soft_right',          -1),
+                    ('medium_right',        -3),
+                    ('hard_right',          -6),
+                    ('soft_break',          -1),
+                    ('medium_break',        -3),
+                    ('hard_break',          -6),
+                    ('soft_acceleration',   -1),
+                    ('medium_acceleration', -3),
+                    ('hard_acceleration',   -6)]
+           
+
+URGENCY = {0: 'out_of_range',
+          1: 'safe',
+          2: 'uneasy',
+          3: 'dangerous',
+          4: 'emergency',
+          5: 'terminal_goal',
+          6: 'terminal_crash'}
+
+REWARDS =           {URGENCY[0] :   0,
+                     URGENCY[1] :  -1,
+                     URGENCY[2] :  -2,
+                     URGENCY[3] :  -4,
+                     URGENCY[4] :  -8,
+                     URGENCY[5] :  10,
+                     URGENCY[6] : -10}
+
+LIDAR_COLORS =      {URGENCY[0] : COLOR_BLUE,
+                     URGENCY[1] : COLOR_GREEN,
+                     URGENCY[2] : COLOR_YELLOW,
+                     URGENCY[3] : COLOR_ORANGE,
+                     URGENCY[4] : COLOR_RED}
+
