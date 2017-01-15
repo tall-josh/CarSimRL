@@ -79,6 +79,8 @@ class Car(pygame.sprite.Sprite):
 #      if no input remain in PID mode
        else:
 #      Reset command array
+
+           # ADD COMMAND LOGIC
            self.command_array = (0,0,0)
     
        self.velx = self.speed * (math.cos(self.heading))

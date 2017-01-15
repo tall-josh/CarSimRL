@@ -2,10 +2,12 @@
 import pygame
 import beam
 import constants as CONST
+import numpy as np
 
 class Lidar(pygame.sprite.Sprite):
     def __init__(self, anchorX, anchorY,anchor_deg):
         self.beams = []
+        self.onehot = np.zeros(CONST.LIDAR_ONEHOT_SIZE)
         self.closest_dist = CONST.LIDAR_RANGE
         
         self.start_ang_deg = 90 - (CONST.LIDAR_SWEEP/2)
@@ -39,11 +41,19 @@ class Lidar(pygame.sprite.Sprite):
     def update(self, anchorX, anchorY, anchor_deg, obstacle_list):
         #updates beam array and also tracks the incoming data to keep track of the most 'urgent' obstacle
         self.closest_dist = CONST.LIDAR_RANGE
-
-        for b in self.beams:
-            b.update(anchorX, anchorY, anchor_deg, obstacle_list, self)
-            if b.dist < self.closest_dist:
-                self.closest_dist = b.dist
+        self.onehot = np.zeros(CONST.LIDAR_ONEHOT_SIZE)
+        
+        
+        for i in range(len(self.beams)):
+            self.beams[i].update(anchorX, anchorY, anchor_deg, obstacle_list, self) 
+            
+            if self.beams[i].dist < CONST.LIDAR_RANGE:
+                self.onehot[i][self.beams[i].dist // CONST.LIDAR_RES] = 1
+            
+            if self.beams[i].dist < self.closest_dist:                              
+                self.closest_dist = self.beams[i].dist
+                
         
         self.reward = self.getReward(self.closest_dist)
+        
         

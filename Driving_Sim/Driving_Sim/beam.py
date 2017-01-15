@@ -31,9 +31,8 @@ class Beam(pygame.sprite.Sprite):
                     if CONST.LIDAR_RANGE * 0.75 < step < CONST.LIDAR_RANGE:
                         self.color = CONST.COLOR_GREEN
                     return
-                    
                 self.dist = step
-        return
+        return 
         
                    
                     

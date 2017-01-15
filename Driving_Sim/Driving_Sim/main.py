@@ -13,6 +13,8 @@ import obstacle
 import game_art as art 
 import lidar
 import math
+import numpy as np
+import csv
 
 
 # Init pygame and create window
@@ -37,10 +39,16 @@ car.attachLidar(lidar)
 all_sprites.add(car)
 
 #setting up lidar_history
-lidar_history = []
+lidar_onehot = []
+file = open('onehot_data_01.txt', 'w')
+file.write('onehot_data_01\n')
+file.close()
+
+#lidar_history = []
 history_depth = 5 # keep 5 frames of past lidar data
 for i in range(history_depth):
-    lidar_history.append([])
+    #lidar_history.append([])
+    lidar_onehot.append(np.zeros(CONST.LIDAR_ONEHOT_SIZE))
 history_idx = 0   # current frame being written to
 
 #init obstacles
@@ -73,15 +81,15 @@ while running:
     collisions = pygame.sprite.spritecollide(car, obstacles, False)
     
     # sensor update        
-    lidar_data = car.updateSensors(obstacles) 
+    car.updateSensors(obstacles) 
     
     #update sensor history
-    lidar_history[history_idx] = lidar_data
     history_idx += 1
     if history_idx == history_depth:
         history_idx = 0
+        
     
-    
+#   respawn obstacles if they are out of range
     for obs in obstacles:
         if obs.out_of_range:
             obs.initState(car.rect.centerx, car.rect.centery, CONST.LIDAR_RANGE)
