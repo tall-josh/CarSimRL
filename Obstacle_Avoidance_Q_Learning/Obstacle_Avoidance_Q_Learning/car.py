@@ -22,8 +22,9 @@ class Car(pygame.sprite.Sprite):
         self.heading = 0#math.radians(random.randint(0,359))
         self.goal = (0,0)
         self.at_goal = False
+        self.out_of_bounds = False
         self.latest_action = 0
-        self.sensor_data = np.zeros(CONST.LIDAR_ONEHOT_SIZE) 
+        self.sensor_data = np.zeros(CONST.LIDAR_DATA_SIZE)
         
         #Q-Learning Current Reward
         self.reward = 0
@@ -53,8 +54,9 @@ class Car(pygame.sprite.Sprite):
         self.heading = 0#math.radians(random.randint(0,359))
         self.goal = (0,0)
         self.at_goal = False
+        self.out_of_bounds = False
         self.latest_action = 0
-        self.sensor_data = np.zeros(CONST.LIDAR_ONEHOT_SIZE) 
+        self.sensor_data = np.zeros(CONST.LIDAR_DATA_SIZE) 
         
         #Q-Learning Current Reward
         self.reward = 0
@@ -83,7 +85,6 @@ class Car(pygame.sprite.Sprite):
     def updateAction(self, action):
         self.latest_action = action
         self.reward += CONST.ACTION_AND_COSTS[action][1]
-        
         action_str = CONST.ACTION_AND_COSTS[action][0]
         if action_str == 'do_nothing':
             return            
@@ -137,7 +138,7 @@ class Car(pygame.sprite.Sprite):
 #      check if input has been made (negative reward to override controls)
        if self.latest_action == 0:
            self.doPID(1/CONST.SCREEN_FPS)
-           self.speed += CONST.CAR.FORWARD_ACCEL
+           self.speed += CONST.CAR_FORWARD_ACCEL
        
     
        if (self.speed > CONST.CAR_MAX_SPEED): self.speed = CONST.CAR_MAX_SPEED
@@ -157,6 +158,12 @@ class Car(pygame.sprite.Sprite):
         
        self.rect.x += self.velx
        self.rect.y -= self.vely
+       
+       if (self.rect.x > CONST.SCREEN_WIDTH or 
+       self.rect.x < 0 or 
+       self.rect.y < 0 or 
+       self.rect.y > CONST.SCREEN_HEIGHT):
+           self.out_of_bounds = True
            
 
             

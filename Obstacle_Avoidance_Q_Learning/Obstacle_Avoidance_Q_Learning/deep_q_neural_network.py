@@ -116,7 +116,13 @@ def new_fc_layer(prev_layer,          # The previous layer.
     return layer
 
         
-        ##### CNN Layout #####        
+        ##### CNN Layout ##### 
+        
+try: 
+    session.close()        
+except:
+    pass
+        
 # Conv Layer 1
 filter_sz1 = 5
 num_filters1 = 16
@@ -129,8 +135,8 @@ num_filters2 = 36
 fc_size = 128
 
 ##### Data dimentions #####
-image_size = CONST.LIDAR_GRAYSCALE_SIZE       
-image_size_flat = CONST.LIDAR_GRAYSCALE_SIZE[0] * CONST.LIDAR_GRAYSCALE_SIZE[1]
+image_size = CONST.LIDAR_DATA_SIZE      
+image_size_flat = CONST.LIDAR_DATA_SIZE[0] * CONST.LIDAR_DATA_SIZE[1]
 num_channels = 1
 num_classes = 13
 
@@ -182,31 +188,48 @@ accuracy=tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
 
 session = tf.Session()
 session.run(tf.global_variables_initializer())
-train_batch_size=64
+#train_batch_size=64
 
 # Counter for total number of iterations performed so far.
 total_iterations = 0
 
-def getQualityMatrix(state_flattened):
+def getQMat(state_flattened):
+    
     state_feed = np.zeros((1,len(state_flattened)))
     state_feed[0] = state_flattened
     q_feed = np.zeros((1,len(CONST.ACTION_AND_COSTS)))
-    print("state_feed: ",state_feed.shape)
-    print("q_target: ",q_target.get_shape())
-    feed_dict = {state: state_feed,
-                 q_target: q_feed}
+    feed_dict = {state: state_feed, q_target: q_feed}
                  
     return session.run(q_pred, feed_dict=feed_dict) 
 
-# fit(scan.flatten(), )
-def fit(state_flattened, target_qs):
+# Same as above (I think) only flattening the array
+# within the method
+def getQMat_broken(state):
+    state_flattened = state.flatten()
     state_feed = np.zeros((1,len(state_flattened)))
     state_feed[0] = state_flattened
     q_feed = np.zeros((1,len(CONST.ACTION_AND_COSTS)))
-    print("state_feed: ",state_feed.shape)
-    print("q_target: ",q_target.get_shape())
+    feed_dict = {state: state_feed, q_target: q_feed}
+                 
+    return session.run(q_pred, feed_dict=feed_dict)
+
+# fit(scan.flatten(), )
+def fit(state_flattened, target_qs_flattened):
+    state_feed = np.zeros((1,len(state_flattened)))
+    state_feed[0] = state_flattened
+    q_feed = np.zeros((1,len(CONST.ACTION_AND_COSTS)))
+    q_feed[0] = target_qs_flattened
     state_action_dict = {state: state_feed, q_target: q_feed}
     session.run(optimizer, feed_dict = state_action_dict)
+
+#def fit(state_flattened, target_qs):
+#    state_feed = np.zeros((1,len(state_flattened)))
+#    state_feed[0] = state_flattened
+#    q_feed = np.zeros((1,len(CONST.ACTION_AND_COSTS)))
+#    print("state_feed: ",state_feed.shape)
+#    print("q_target: ",q_target.get_shape())
+#    state_action_dict = {state: state_feed, q_target: q_feed}
+#    session.run(optimizer, feed_dict = state_action_dict)
     
 def experienceReplay(num_iterations, experience_dict):
     # Ensure we update the global variable rather than a local copy.
