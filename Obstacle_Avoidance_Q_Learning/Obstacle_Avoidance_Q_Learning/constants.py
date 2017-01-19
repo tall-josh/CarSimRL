@@ -24,7 +24,7 @@ SCREEN_FPS = 30
 ONE_DEGREE = 3.14159 / 180.0
 CAR_ANGULAR_ACCEL = ONE_DEGREE * 1
 CAR_FORWARD_ACCEL = 0.5
-CAR_MAX_SPEED = 5.0
+CAR_MAX_SPEED = 20.0
 
 OBSTACLE_MAX_SPEED = 10
 OBSTACLE_MIN_SPEED = 3
@@ -43,16 +43,16 @@ STATE_MATRIX_SIZE = (HISTORY_DEPTH, LIDAR_COUNT, (LIDAR_RANGE // LIDAR_RES))
 ACTION_AND_COSTS = [('do_nothing',           0),
                     ('soft_left',           -1),
                     ('medium_left',         -3),
-                    ('hard_left',           -6),
+                    ('hard_left',           -5),
                     ('soft_right',          -1),
                     ('medium_right',        -3),
-                    ('hard_right',          -6),
+                    ('hard_right',          -5),
                     ('soft_break',          -1),
                     ('medium_break',        -3),
-                    ('hard_break',          -6),
+                    ('hard_break',          -5),
                     ('soft_acceleration',   -1),
                     ('medium_acceleration', -3),
-                    ('hard_acceleration',   -6)]
+                    ('hard_acceleration',   -5)]
            
 
 URGENCY = {0: 'out_of_range',
@@ -63,13 +63,13 @@ URGENCY = {0: 'out_of_range',
           5: 'terminal_goal',
           6: 'terminal_crash'}
 
-REWARDS =           {URGENCY[0] :   0,
-                     URGENCY[1] :  -1,
-                     URGENCY[2] :  -2,
-                     URGENCY[3] :  -4,
-                     URGENCY[4] :  -8,
-                     URGENCY[5] :  10,
-                     URGENCY[6] : -10}
+REWARDS =           {URGENCY[0] :   0,  #o_o_r
+                     URGENCY[1] :  -2,  #safe
+                     URGENCY[2] :  -4,  #unease
+                     URGENCY[3] :  -6,  #dangerous
+                     URGENCY[4] :  -10, #emergency
+                     URGENCY[5] :   10, #goal
+                     URGENCY[6] :  -20} #crash
 
 LIDAR_COLORS =      {URGENCY[0] : COLOR_BLUE,
                      URGENCY[1] : COLOR_GREEN,

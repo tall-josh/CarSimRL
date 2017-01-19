@@ -15,9 +15,16 @@ class Obstacle(pygame.sprite.Sprite):
         self.rect.center = (0,0)#(random.randint(-100, CONST.SCREEN_WIDTH + 100), random.randint(-100, CONST.SCREEN_HEIGHT+100))            
         self.heading = 0#random.randint(0,359)
         self.speed = 0#random.randint(CONST.OBSTACLE_MIN_SPEED, CONST.OBSTACLE_MAX_SPEED)
-        self.initState(playerX, playerY, lidar_range)
+        #self.initState(playerX, playerY, lidar_range)
+        self.initStateStatic()
         self.out_of_range = False
         self.tag = False #Flag to indicate if Obstacle is seen by lidar
+     
+    def initStateStatic(self):
+        
+        self.rect.center = (CONST.SCREEN_WIDTH-300, CONST.SCREEN_HEIGHT//2)
+        self.heading = 0
+        self.speed = 0
         
     def initState(self, playerX, playerY, lidar_range):
         

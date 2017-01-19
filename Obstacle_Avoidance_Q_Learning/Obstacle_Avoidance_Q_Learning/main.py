@@ -56,14 +56,19 @@ def initSimulation(car, state):
     all_sprites.empty()
     all_sprites.add(car)
     
-    car.reInit()
+    car.reInit(random=False)
     state.reset()
     
+    obs = obstacle.Obstacle(art.cars['gray'],car.rect.centerx, car.rect.centery, CONST.LIDAR_RANGE)
+    all_sprites.add(obs)
+    obstacles.add(obs)
+    
     #init obstacles
-    for i in range(random.randint(1,CONST.MAX_NUMBER_OF_OBSTACLES)):
-        obs = obstacle.Obstacle(art.cars['gray'],car.rect.centerx, car.rect.centery, CONST.LIDAR_RANGE)
-        all_sprites.add(obs)
-        obstacles.add(obs)
+#    for i in range(random.randint(1,CONST.MAX_NUMBER_OF_OBSTACLES)):
+#        obs = obstacle.Obstacle(art.cars['gray'],car.rect.centerx, car.rect.centery, CONST.LIDAR_RANGE)
+#        all_sprites.add(obs)
+#        obstacles.add(obs)
+     
         
     #initial state assumes the agent 
     #has been stationary for a short period
@@ -74,8 +79,8 @@ def initSimulation(car, state):
     ########## I'M GOING WHERE THE ACTION ISSSS!!!!! ################
 score = 0               # total score of the round
 ticks  = 0              # number of iterations in each round will give up if > than...
-max_ticks_before_we_just_give_up = 100
-epochs = 10
+max_ticks_before_we_just_give_up = 500
+epochs = 1000
 gamma = 0.9
 epsilon = 1
 leave_program = False
@@ -101,11 +106,13 @@ for i in range(epochs):
         ##### SELECT ACTION #####
         # select random action or use best action from qMatrix
         action_idx = 0
+        epsilon_rand = False
 ##### UNCOMMENT WHEN YOU"RE DONE CHECKING CONTROLS OF CAR ######
-#        if (random.random() < epsilon):
-#            action_idx = random.randint(0,11)
-#        else:
-#            action_idx = np.argmax(qMatrix)
+        if (random.random() < epsilon):
+            action_idx = random.randint(0,len(CONST.ACTION_AND_COSTS)-1)
+            epsilon_rand = True
+        else:
+            action_idx = np.argmax(qMatrix)
        
         ##### Take action #####
         #print("Action: {0}".format(CONST.ACTION_AND_COSTS[action_idx]))
@@ -138,11 +145,27 @@ for i in range(epochs):
         target_q = reward + (gamma*qMax)
     
         # override quality predicted by DNN for this action
-        # to target_q calculated above. 
+        # to target_q calculated above.
+        
         target[0][action_idx] = target_q
         
-        dqnn.fit(state.state.flatten(), target.flatten())
         
+        dqnn.fit(state.state.flatten(), target.flatten())
+
+        if epsilon > 0.1:
+            epsilon -= 1/epochs
+        
+        if ticks % 20 == 0:
+            if epsilon_rand:
+                print("epsilon_rand")
+            else:
+                print("epsilon_argMax")
+            print("Epsilon: ", epsilon)
+            print("Target_Q: ", target_q)
+            print("action_idx: {0}".format(action_idx))
+            print("Q_mat: ", qMatrix)   
+            
+            
         ##### MORE PYGAME HOUSE KEEPING #####
     #   respawn obstacles if they are out of range
         for obs in obstacles:            
@@ -151,9 +174,13 @@ for i in range(epochs):
                 print("Reload")
                 
 #       check if car is out of bounds
-        if car.out_of_bounds or (ticks == max_ticks_before_we_just_give_up):
+        if car.out_of_bounds:
             pigs_fly = True
             print("Out_Of_bounds")
+        #       check if car is out of bounds
+        if ticks == max_ticks_before_we_just_give_up:
+            pigs_fly = True
+            print("time's up")
                 
     #    Draw / render
         all_sprites.draw(screen)

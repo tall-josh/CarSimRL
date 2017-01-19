@@ -45,7 +45,7 @@ class Car(pygame.sprite.Sprite):
         self.I = 0
         self.D = 0
     
-    def reInit(self):
+    def reInit(self, random):
         self.rect = self.image.get_rect()
         self.rect.center = (0,0)
         self.velx = 0
@@ -61,17 +61,20 @@ class Car(pygame.sprite.Sprite):
         #Q-Learning Current Reward
         self.reward = 0
         
-        goal_valid = False
-        while not goal_valid:
-            self.goal = (random.randint(10,CONST.SCREEN_WIDTH-10), random.randint(10,CONST.SCREEN_HEIGHT-10))
-            self.rect.center = (random.randint(-50, CONST.SCREEN_WIDTH+50), random.randint(-50, CONST.SCREEN_HEIGHT+50))
-            a = self.rect.centerx - self.goal[0]
-            b = self.rect.centery - self.goal[1]
-            # absolute worst case senario
-            min_dist = math.sqrt((CONST.SCREEN_WIDTH/2)*(CONST.SCREEN_WIDTH/2) + (CONST.SCREEN_HEIGHT/2)*(CONST.SCREEN_HEIGHT/2))
-            if (math.sqrt((a*a)+(b*b))) > min_dist:
-                goal_valid = True
-        
+        if random:
+            goal_valid = False
+            while not goal_valid:
+                self.goal = (random.randint(10,CONST.SCREEN_WIDTH-10), random.randint(10,CONST.SCREEN_HEIGHT-10))
+                self.rect.center = (random.randint(-50, CONST.SCREEN_WIDTH+50), random.randint(-50, CONST.SCREEN_HEIGHT+50))
+                a = self.rect.centerx - self.goal[0]
+                b = self.rect.centery - self.goal[1]
+                # absolute worst case senario
+                min_dist = math.sqrt((CONST.SCREEN_WIDTH/2)*(CONST.SCREEN_WIDTH/2) + (CONST.SCREEN_HEIGHT/2)*(CONST.SCREEN_HEIGHT/2))
+                if (math.sqrt((a*a)+(b*b))) > min_dist:
+                    goal_valid = True
+        else:
+             self.goal = (CONST.SCREEN_WIDTH//2 +100, CONST.SCREEN_HEIGHT//2)
+             self.rect.center = (50, CONST.SCREEN_HEIGHT//2)
         
     def attachLidar(self, to_attach):
         self.lidar = to_attach

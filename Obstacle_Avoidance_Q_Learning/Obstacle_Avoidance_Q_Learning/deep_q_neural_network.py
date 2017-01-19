@@ -124,15 +124,15 @@ except:
     pass
         
 # Conv Layer 1
-filter_sz1 = 5
-num_filters1 = 16
+filter_sz1 = 3#5
+num_filters1 = 10#16
 
 # Conv Layer 2
-filter_sz2 = 5
-num_filters2 = 36
+filter_sz2 = 3#5
+num_filters2 = 20#36
 
 # Fully connected
-fc_size = 128
+fc_size = 100#128
 
 ##### Data dimentions #####
 image_size = CONST.LIDAR_DATA_SIZE      
@@ -146,8 +146,9 @@ state = tf.placeholder(tf.float32, shape=[None, image_size_flat], name = 'state'
 # reshape state tensor to a tensor [arbetrary_number_of_inputs, cols, rows, channels]
 x_image = tf.reshape(state, [-1, image_size[0], image_size[1], num_channels])
 
+#q_matrix = tf.placeholder(tf.float32, shape=[None, num_classes], name = 'q_matrix')
 q_target = tf.placeholder(tf.float32, shape=[None, num_classes], name = 'q_target')
-q_target_cls = tf.argmax(q_target, dimension=1)
+
 
 layer_conv1, weights_conv1 = new_conv_layer(prev_layer=x_image,
                                                  num_input_channels = num_channels,
@@ -169,22 +170,17 @@ layer_fc1 = new_fc_layer(prev_layer = layer_flat,
                          num_outputs = fc_size,
                          use_relu=True)
 
-layer_fc2 = new_fc_layer(prev_layer=layer_fc1,
+q_matrix = new_fc_layer(prev_layer=layer_fc1,
                          num_inputs=fc_size,
                          num_outputs=num_classes,
                          use_relu=False)
 
 ##### CLASS PREDICTION #####
-q_pred = tf.nn.softmax(layer_fc2)
-q_pred_cls = tf.argmax(q_pred, dimension=1)
 
-
-cross_entropy = tf.nn.softmax_cross_entropy_with_logits(logits=layer_fc2,
-                                                        labels=q_target)
-cost = tf.reduce_mean(cross_entropy)
+q_est_action = tf.argmax(q_matrix, dimension=1)
+reduction = tf.square(q_target - q_matrix)
+cost = tf.reduce_mean(reduction, reduction_indices=1)
 optimizer = tf.train.AdamOptimizer(learning_rate=1e-4).minimize(cost)
-correct_prediction = tf.equal(q_pred_cls, q_target_cls)
-accuracy=tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
 
 session = tf.Session()
 session.run(tf.global_variables_initializer())
@@ -197,21 +193,10 @@ def getQMat(state_flattened):
     
     state_feed = np.zeros((1,len(state_flattened)))
     state_feed[0] = state_flattened
-    q_feed = np.zeros((1,len(CONST.ACTION_AND_COSTS)))
-    feed_dict = {state: state_feed, q_target: q_feed}
+    #q_feed = np.zeros((1,len(CONST.ACTION_AND_COSTS)))
+    feed_dict = {state: state_feed}
                  
-    return session.run(q_pred, feed_dict=feed_dict) 
-
-# Same as above (I think) only flattening the array
-# within the method
-def getQMat_broken(state):
-    state_flattened = state.flatten()
-    state_feed = np.zeros((1,len(state_flattened)))
-    state_feed[0] = state_flattened
-    q_feed = np.zeros((1,len(CONST.ACTION_AND_COSTS)))
-    feed_dict = {state: state_feed, q_target: q_feed}
-                 
-    return session.run(q_pred, feed_dict=feed_dict)
+    return session.run(q_matrix, feed_dict=feed_dict)
 
 # fit(scan.flatten(), )
 def fit(state_flattened, target_qs_flattened):
@@ -244,17 +229,6 @@ def experienceReplay(num_iterations, experience_dict):
         # TensorFlow assigns the variables in feed_dict_train
         # to the placeholder variables and then runs the optimizer.
         session.run(optimizer, feed_dict=experience_dict)
-
-        # Print status every 100 iterations.
-        if i % 100 == 0:
-            # Calculate the accuracy on the training-set.
-            acc = session.run(accuracy, feed_dict=experience_dict)
-
-            # Message for printing.
-            msg = "Optimization Iteration: {0:>6}, Training Accuracy: {1:>6.1%}"
-
-            # Print it.
-            print(msg.format(i + 1, acc))
 
     # Update the total number of iterations performed.
     total_iterations += num_iterations
