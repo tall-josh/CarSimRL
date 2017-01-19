@@ -26,8 +26,8 @@ class Car(pygame.sprite.Sprite):
         self.latest_action = 0
         self.sensor_data = np.zeros(CONST.LIDAR_DATA_SIZE)
         
-        #Q-Learning Current Reward
-        self.reward = 0
+        #Q-Learning Current Reward 
+        self.reward = 0 
         
         goal_valid = False
         while not goal_valid:
@@ -73,7 +73,7 @@ class Car(pygame.sprite.Sprite):
                 if (math.sqrt((a*a)+(b*b))) > min_dist:
                     goal_valid = True
         else:
-             self.goal = (CONST.SCREEN_WIDTH//2 +100, CONST.SCREEN_HEIGHT//2)
+             self.goal = (CONST.SCREEN_WIDTH - 100, CONST.SCREEN_HEIGHT//2)
              self.rect.center = (50, CONST.SCREEN_HEIGHT//2)
         
     def attachLidar(self, to_attach):

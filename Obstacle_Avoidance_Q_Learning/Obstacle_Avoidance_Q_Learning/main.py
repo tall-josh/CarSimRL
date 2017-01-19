@@ -87,7 +87,7 @@ leave_program = False
 batch_size = 40
 buffer = 80
 replay = []
-
+h = 0
 for i in range(epochs):
     
     initSimulation(car, state)
@@ -102,6 +102,7 @@ for i in range(epochs):
     
         # Returns quality estimates for all posiable actions
         qMatrix = dqnn.getQMat(state.state.flatten())
+        old_state = copy.deepcopy(state.state)
         
         ##### SELECT ACTION #####
         # select random action or use best action from qMatrix
@@ -129,9 +130,9 @@ for i in range(epochs):
         
         ##### Generate target vector to train network #####
         target = copy.deepcopy(qMatrix)
-        reward = car.reward
+        reward = car.reward 
         
-        # Check for terminal states and override 
+         # Check for terminal states and override 
         # reward to teminal values if necessary
         if collisions:
             pigs_fly = True
@@ -140,28 +141,43 @@ for i in range(epochs):
         if car.at_goal:
             pigs_fly = True
             reward = CONST.REWARDS['terminal_goal']
+            car.terminal = True
             print("Terminal Goal")
         
-        target_q = reward + (gamma*qMax)
-    
-        # override quality predicted by DNN for this action
-        # to target_q calculated above.
+        if len(replay) < buffer:
+            replay.append((old_state, action_idx, reward, state.state))
+        else:
+            if h < (buffer-1):
+                h += 1
+            else:
+                h = 0
+            # when replay buffer full, just overwrite from idx[0] rather than clearing and starting again
+            replay[h] = (old_state.flatten(), action_idx, reward, state.state.flatten())
+            
+            batch = random.sample(replay, batch_size)
+            state_batch = []
+            target_batch = []
+            for element in batch:
+                old_state, action, reward, new_state = element
+                q_mat_old = dqnn.getQMat(old_state.flatten())
+                q_val_old = np.argmax(q_mat_old)
+                
+                q_mat_new = dqnn.getQMat(new_state.flatten())
+                q_val_new = np.argmax(q_mat_new)
         
-        target[0][action_idx] = target_q
-        
-        
-        dqnn.fit(state.state.flatten(), target.flatten())
+                target_q = reward + (gamma*qMax)
+                target[0][action_idx] = target_q
+
+                state_batch.append(copy.deepcopy(old_state))
+                target_batch.append(copy.deepcopy(target))
+                
+            dqnn.fitBatch(state_batch, target_batch)
 
         if epsilon > 0.1:
             epsilon -= 1/epochs
         
         if ticks % 20 == 0:
-            if epsilon_rand:
-                print("epsilon_rand")
-            else:
-                print("epsilon_argMax")
             print("Epsilon: ", epsilon)
-            print("Target_Q: ", target_q)
             print("action_idx: {0}".format(action_idx))
             print("Q_mat: ", qMatrix)   
             

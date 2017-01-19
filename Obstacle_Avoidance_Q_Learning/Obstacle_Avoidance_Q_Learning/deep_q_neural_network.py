@@ -206,6 +206,16 @@ def fit(state_flattened, target_qs_flattened):
     q_feed[0] = target_qs_flattened
     state_action_dict = {state: state_feed, q_target: q_feed}
     session.run(optimizer, feed_dict = state_action_dict)
+    
+def fitBatch(batch_state_flattened, batch_target_qs_flattened):
+    state_feed = np.zeros((len(batch_state_flattened),len(batch_state_flattened[0])))
+    q_feed = np.zeros((len(batch_state_flattened),len(CONST.ACTION_AND_COSTS)))
+    for i in range(len(batch_state_flattened)):
+        state_feed[i] = batch_state_flattened[i]
+        q_feed[i] = batch_target_qs_flattened[i]
+
+    state_action_dict = {state: state_feed, q_target: q_feed}  
+    session.run(optimizer, feed_dict = state_action_dict)
 
 #def fit(state_flattened, target_qs):
 #    state_feed = np.zeros((1,len(state_flattened)))
