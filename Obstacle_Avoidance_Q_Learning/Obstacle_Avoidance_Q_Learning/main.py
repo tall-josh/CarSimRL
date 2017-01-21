@@ -17,8 +17,12 @@ import numpy as np
 import state_tracker as st
 import copy
 import deep_q_neural_network as dqnn
+import tensorflow as tf
 
-
+try: 
+    tf.reset_default_graph()      
+except:
+    pass
 #if dqnn.session._opened:
 #    print("Closeing Existing tf.session")
 #    dqnn.session.close()
@@ -80,14 +84,17 @@ def initSimulation(car, state):
 score = 0               # total score of the round
 ticks  = 0              # number of iterations in each round will give up if > than...
 max_ticks_before_we_just_give_up = 500
-epochs = 1000
+epochs = 5000
 gamma = 0.9
 epsilon = 1
 leave_program = False
-batch_size = 40
+batch_size = 10
 buffer = 80
 replay = []
 h = 0
+target_q = 0
+reward = 0
+qMax = 0
 for i in range(epochs):
     
     initSimulation(car, state)
@@ -102,7 +109,7 @@ for i in range(epochs):
     
         # Returns quality estimates for all posiable actions
         qMatrix = dqnn.getQMat(state.state.flatten())
-        old_state = copy.deepcopy(state.state)
+        state_0 = state.state
         
         ##### SELECT ACTION #####
         # select random action or use best action from qMatrix
@@ -126,7 +133,7 @@ for i in range(epochs):
     
         ##### GET maxQ' from DCNN #####   
         next_qMatrix = dqnn.getQMat(state.state.flatten())
-        qMax = np.argmax(next_qMatrix)
+        qMax = next_qMatrix[0][np.argmax(next_qMatrix)]
         
         ##### Generate target vector to train network #####
         target = copy.deepcopy(qMatrix)
@@ -145,39 +152,37 @@ for i in range(epochs):
             print("Terminal Goal")
         
         if len(replay) < buffer:
-            replay.append((old_state, action_idx, reward, state.state))
+            replay.append((state_0, action_idx, reward, state.state))
         else:
             if h < (buffer-1):
                 h += 1
             else:
                 h = 0
             # when replay buffer full, just overwrite from idx[0] rather than clearing and starting again
-            replay[h] = (old_state.flatten(), action_idx, reward, state.state.flatten())
+            replay[h] = (state_0.flatten(), action_idx, reward, state.state.flatten())
             
             batch = random.sample(replay, batch_size)
-            state_batch = []
             target_batch = []
             for element in batch:
                 old_state, action, reward, new_state = element
-                q_mat_old = dqnn.getQMat(old_state.flatten())
+                q_mat_old = dqnn.getQMat(old_state)
                 q_val_old = np.argmax(q_mat_old)
                 
-                q_mat_new = dqnn.getQMat(new_state.flatten())
+                q_mat_new = dqnn.getQMat(new_state)
                 q_val_new = np.argmax(q_mat_new)
         
                 target_q = reward + (gamma*qMax)
                 target[0][action_idx] = target_q
-
-                state_batch.append(copy.deepcopy(old_state))
-                target_batch.append(copy.deepcopy(target))
+                target_batch.append(target)
                 
-            dqnn.fitBatch(state_batch, target_batch)
-
+            dqnn.fitBatch([row[0] for row in batch], target_batch)
+        print("Ticks: ", ticks )
         if epsilon > 0.1:
             epsilon -= 1/epochs
         
         if ticks % 20 == 0:
-            print("Epsilon: ", epsilon)
+            print("Epochs: ", i)
+            print("target_q: {0} = reward: {1} + gamma:{2} * (qMax: {3})".format(target_q, reward, gamma, qMax))
             print("action_idx: {0}".format(action_idx))
             print("Q_mat: ", qMatrix)   
             

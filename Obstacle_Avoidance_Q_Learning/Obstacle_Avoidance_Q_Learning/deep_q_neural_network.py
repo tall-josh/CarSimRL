@@ -119,7 +119,7 @@ def new_fc_layer(prev_layer,          # The previous layer.
         ##### CNN Layout ##### 
         
 try: 
-    session.close()        
+    tf.reset_default_graph()      
 except:
     pass
         

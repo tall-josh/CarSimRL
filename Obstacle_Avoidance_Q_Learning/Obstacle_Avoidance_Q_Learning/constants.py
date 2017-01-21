@@ -18,7 +18,7 @@ COLOR_YELLOW = (255,255,0)
 SCREEN_WIDTH = 1400
 SCREEN_HEIGHT = 700
 SCREEN_SIZE = (SCREEN_WIDTH, SCREEN_HEIGHT)
-SCREEN_FPS = 30
+SCREEN_FPS = 15
 
 
 ONE_DEGREE = 3.14159 / 180.0
@@ -64,7 +64,7 @@ URGENCY = {0: 'out_of_range',
           6: 'terminal_crash'}
 
 REWARDS =           {URGENCY[0] :   0,  #o_o_r
-                     URGENCY[1] :  -2,  #safe
+                     URGENCY[1] :  -1,  #safe
                      URGENCY[2] :  -4,  #unease
                      URGENCY[3] :  -6,  #dangerous
                      URGENCY[4] :  -10, #emergency

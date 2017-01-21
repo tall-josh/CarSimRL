@@ -25,7 +25,8 @@ class Car(pygame.sprite.Sprite):
         self.out_of_bounds = False
         self.latest_action = 0
         self.sensor_data = np.zeros(CONST.LIDAR_DATA_SIZE)
-        
+        self.goal_dist = 100
+        self.reached_goal_count = 0
         #Q-Learning Current Reward 
         self.reward = 0 
         
@@ -57,7 +58,6 @@ class Car(pygame.sprite.Sprite):
         self.out_of_bounds = False
         self.latest_action = 0
         self.sensor_data = np.zeros(CONST.LIDAR_DATA_SIZE) 
-        
         #Q-Learning Current Reward
         self.reward = 0
         
@@ -73,8 +73,8 @@ class Car(pygame.sprite.Sprite):
                 if (math.sqrt((a*a)+(b*b))) > min_dist:
                     goal_valid = True
         else:
-             self.goal = (CONST.SCREEN_WIDTH - 100, CONST.SCREEN_HEIGHT//2)
              self.rect.center = (50, CONST.SCREEN_HEIGHT//2)
+             self.goal = (50 + self.goal_dist, CONST.SCREEN_HEIGHT//2)
         
     def attachLidar(self, to_attach):
         self.lidar = to_attach
@@ -87,7 +87,7 @@ class Car(pygame.sprite.Sprite):
     # rewards asociated with obstacel proximity)
     def updateAction(self, action):
         self.latest_action = action
-        self.reward += CONST.ACTION_AND_COSTS[action][1]
+        self.reward = CONST.ACTION_AND_COSTS[action][1]
         action_str = CONST.ACTION_AND_COSTS[action][0]
         if action_str == 'do_nothing':
             return            
@@ -125,11 +125,9 @@ class Car(pygame.sprite.Sprite):
         delta_rad = math.atan2(math.sin(delta_rad), math.cos(delta_rad))
         self.heading += (self.P * delta_rad) + (self.I * delta_time * delta_time) + (self.D * delta_rad/delta_time)
         #print('Head: {0}, ToGoal: {1}, Diff: {2}'.format(math.degrees(self.heading), math.degrees(rad_to_goal), (math.degrees(delta_rad))))
-        if math.sqrt((dx*dx)+(dy*dy)) < 20:
-            self.at_goal = True
 
     # Updates sensor data with and alocates 
-    # rewards for obstale proximity
+    # reward s for obstale proximity
     def updateSensors(self, obstacles):
         self.lidar.update(self.rect.centerx, self.rect.centery, math.degrees(self.heading), obstacles)
         self.sensor_data = self.lidar.onehot
@@ -162,11 +160,25 @@ class Car(pygame.sprite.Sprite):
        self.rect.x += self.velx
        self.rect.y -= self.vely
        
+       dx = self.goal[0] - self.rect.centerx
+       dy = self.rect.centery - self.goal[1]
+       if math.sqrt((dx*dx)+(dy*dy)) < 30:
+           self.at_goal = True
+           self.reached_goal_count += 1
+           
+           if self.reached_goal_count % 10 == 0:
+               self.goal_dist += 50
+    
+       
+       
        if (self.rect.x > CONST.SCREEN_WIDTH or 
        self.rect.x < 0 or 
        self.rect.y < 0 or 
-       self.rect.y > CONST.SCREEN_HEIGHT):
+       self.rect.y > CONST.SCREEN_HEIGHT or
+       self.rect.x > self.goal[0] + 300):  
            self.out_of_bounds = True
+           
+         
            
 
             

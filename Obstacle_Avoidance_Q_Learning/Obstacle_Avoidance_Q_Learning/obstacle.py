@@ -22,7 +22,7 @@ class Obstacle(pygame.sprite.Sprite):
      
     def initStateStatic(self):
         
-        self.rect.center = (CONST.SCREEN_WIDTH//2, CONST.SCREEN_HEIGHT//2)
+        self.rect.center = (CONST.SCREEN_WIDTH//4, CONST.SCREEN_HEIGHT//2 + 200)
         self.heading = 0
         self.speed = 0
         
