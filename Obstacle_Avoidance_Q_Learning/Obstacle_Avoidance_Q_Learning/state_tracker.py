@@ -32,7 +32,7 @@ class StateTracker():
         self.state += new_scan
         
         # replace oldest scan with new_scan
-        self.frame_history[self.oldest_state_idx] = copy.deepcopy(new_scan)
+        self.frame_history[self.oldest_state_idx] = new_scan
         
         # increment olderst_scan_idx
         self.oldest_state_idx += 1
