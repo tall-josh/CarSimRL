@@ -1,0 +1,26 @@
+Traceback (most recent call last):
+  File "C:\Users\Josh\Anaconda3\lib\site-packages\spyder\app\mainwindow.py", line 2998, in main
+    mainwindow = run_spyder(app, options, args)
+  File "C:\Users\Josh\Anaconda3\lib\site-packages\spyder\app\mainwindow.py", line 2912, in run_spyder
+    main.post_visible_setup()
+  File "C:\Users\Josh\Anaconda3\lib\site-packages\spyder\app\mainwindow.py", line 1261, in post_visible_setup
+    self.projects.reopen_last_project()
+  File "C:\Users\Josh\Anaconda3\lib\site-packages\spyder\plugins\projects.py", line 298, in reopen_last_project
+    restart_consoles=False)
+  File "C:\Users\Josh\Anaconda3\lib\site-packages\spyder\plugins\projects.py", line 252, in open_project
+    self.current_active_project = EmptyProject(path)
+  File "C:\Users\Josh\Anaconda3\lib\site-packages\spyder\widgets\projects\type\__init__.py", line 63, in __init__
+    self.create_project_config_files()
+  File "C:\Users\Josh\Anaconda3\lib\site-packages\spyder\widgets\projects\type\__init__.py", line 94, in create_project_config_files
+    version=version)
+  File "C:\Users\Josh\Anaconda3\lib\site-packages\spyder\widgets\projects\config.py", line 97, in __init__
+    raw_mode=True, remove_obsolete=True)
+  File "C:\Users\Josh\Anaconda3\lib\site-packages\spyder\config\user.py", line 202, in __init__
+    self.load_from_ini()
+  File "C:\Users\Josh\Anaconda3\lib\site-packages\spyder\config\user.py", line 252, in load_from_ini
+    self.read(self.filename(), encoding='utf-8')
+  File "C:\Users\Josh\Anaconda3\lib\configparser.py", line 696, in read
+    self._read(fp, filename)
+  File "C:\Users\Josh\Anaconda3\lib\configparser.py", line 1089, in _read
+    fpname, lineno)
+configparser.DuplicateOptionError: While reading from 'C:/Users/Josh/Documents/Python Scripts/Obstacle_Avoidance_Q_Learning/Obstacle_Avoidance_Q_Learning\\.spyproject\\workspace.ini' [line  9]: option 'save_history' in section 'workspace' already exists

@@ -12,7 +12,7 @@ class Beam(pygame.sprite.Sprite):
         self.y1 = 0
         self.dist = 0
             
-    def update(self, anchorX, anchorY, anchor_deg, obstacle_list, lidar):      
+    def update(self, anchorX, anchorY, anchor_deg, obstacle_list, lidar): 
         for obs in obstacle_list:
             self.color = CONST.COLOR_BLUE
             for step in lidar.increments:
@@ -31,8 +31,9 @@ class Beam(pygame.sprite.Sprite):
                     if CONST.LIDAR_RANGE * 0.75 < step < CONST.LIDAR_RANGE:
                         self.color = CONST.COLOR_GREEN
                     return
+                    
                 self.dist = step
-        return 
+        return
         
                    
                     
