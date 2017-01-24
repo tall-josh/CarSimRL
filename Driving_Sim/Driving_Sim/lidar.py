@@ -41,14 +41,28 @@ class Lidar(pygame.sprite.Sprite):
             return CONST.REWARDS["safe"]
         else:
             return CONST.REWARDS["out_of_range"]
-            
+
+    def sortNearestObstacles(self, cenX, cenY, obstacle_list):
+        sqr_dists = []
+        idx = 0
+        for obs in obstacle_list:
+            dist = (cenX-obs.rect.center[0])**2 + (cenY-obs.rect.center[1])**2
+            sqr_dists.append((dist, idx))
+            idx += 1
+        sqr_dists.sort()
+        idxs = [i[1] for i in sqr_dists]
+        return idxs
+        #obstacle_list.sprites() = [obstacle_list.sprites()[i] for i in idxs]
+
     def update(self, anchorX, anchorY, anchor_deg, obstacle_list):
         #updates beam array and also tracks the incoming data to keep track of the most 'urgent' obstacle
         self.closest_dist = CONST.LIDAR_RANGE
         self.onehot = np.zeros(CONST.LIDAR_DATA_SIZE)
         
+        sorted_idx_list = self.sortNearestObstacles(anchorX, anchorY, obstacle_list)
+        
         for i in range(len(self.beams)):
-            self.beams[i].update(anchorX, anchorY, anchor_deg, obstacle_list, self) 
+            self.beams[i].update(anchorX, anchorY, anchor_deg, obstacle_list, sorted_idx_list, self) 
             
             if self.beams[i].dist < CONST.LIDAR_RANGE:
                 self.onehot[i][self.beams[i].dist // CONST.LIDAR_RES] = 1

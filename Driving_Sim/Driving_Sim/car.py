@@ -35,7 +35,7 @@ class Car(pygame.sprite.Sprite):
         self.lidar = None #need to attach using attachLidar(self, lidar)
         self.image = pygame.image.load(car_art)
         self.__image_master = self.image
-        self.speed = CONST.INIT_SPEED
+        self.speed = CONST.INIT_SPEED + 1
         self.goal_dist = 100
         self.PID = (0.5, 0.1, 0)
         self.delta_heading = 0
@@ -50,7 +50,6 @@ class Car(pygame.sprite.Sprite):
     # rewards asociated with obstacel proximity)
     def updateAction(self, action):
         self.latest_action = action
-        print("action ", action)
         self.reward = CONST.ACTION_AND_COSTS[action][1]
         action_str = CONST.ACTION_AND_COSTS[action][0]
 

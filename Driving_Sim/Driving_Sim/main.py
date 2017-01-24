@@ -15,9 +15,8 @@ import math
 import numpy as np
 import state_tracker as st
 import random
-import road
 
-log_data = False
+log_data = True
 if log_data:
     file_states = open("states_file.txt", 'w')
     file_states.close()
@@ -52,33 +51,29 @@ all_sprites.add(car)
 
 # initalise 
 state = st.StateTracker(CONST.STATE_MATRIX_SIZE[0], CONST.STATE_MATRIX_SIZE[1], CONST.STATE_MATRIX_SIZE[2])
-
 # data logging
 states = []
 actions = []
 rewards = []
 
 def doObsMerge(merge_count):
-    
     if ( (random.uniform(0,1) < CONST.MERGE_PROB) and
          (merge_count < CONST.MAX_NO_MERGES) ):
-        print("Try to merge")
         
         rand_obs = random.randint(0,len(obstacles)-1)
-        left_is_0_right_is_1 = random.radint(0,1)
+        left_is_0_right_is_1 = random.randint(0,1)
         
         if left_is_0_right_is_1 == 0:
-            if obstacles.sprites()[rand_obs].performMerge('left', obstacles):
-            merge_count += 1
-            print("merge left")
+            if obstacles.sprites()[rand_obs].performMergeLeft(obstacles):
+                merge_count += 1
         
-        else obstacles.sprites()[rand_obs].performMerge('right', obstacles):
-            merge_count += 1
-            print("merge right")
+        else:
+            if obstacles.sprites()[rand_obs].performMergeRight(obstacles):
+                merge_count += 1
             
 
-def initObstacles(dir_with, dir_against):
-    for i in range(dir_with):
+def initObstacles(num_l_to_r, num_r_to_l):
+    for i in range(num_l_to_r):
         obs = obstacle.Obstacle(random.randint(0,2),
                                 "l_to_r",
                                 art.cars['gray'],
@@ -88,7 +83,7 @@ def initObstacles(dir_with, dir_against):
         all_sprites.add(obs)
         obstacles.add(obs)
         
-    for i in range(dir_against):
+    for i in range(num_r_to_l):
         obs = obstacle.Obstacle(random.randint(3,5),
                             "r_to_l",
                             art.cars['gray'],
@@ -123,11 +118,12 @@ def initSimulation(car, state):
 #    if travel_dir == 'l_to_r':
 #        
     
-    
+crashes = 0
 ######### I'M GOING WHERE THE ACTION ISSSS!!!!! ################
 bears_shit_in_woods = True
 while bears_shit_in_woods:
-    
+    global crashes
+    print("crashes: ", crashes)
     initSimulation(car, state)
     pigs_fly = False
     ticks = 0;
@@ -177,7 +173,8 @@ while bears_shit_in_woods:
         if collisions:
             pigs_fly = True
             reward = CONST.REWARDS['terminal_crash']
-            print("Terminal Crash")
+            print("Terminal Crash: ", car.rect.center)
+            crashes += 1
         if car.at_goal:
             pigs_fly = True
             reward = CONST.REWARDS['terminal_goal']
