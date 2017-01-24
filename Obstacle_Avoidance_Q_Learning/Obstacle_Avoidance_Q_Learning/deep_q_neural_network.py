@@ -124,15 +124,15 @@ except:
     pass
         
 # Conv Layer 1
-filter_sz1 = 3#5
-num_filters1 = 10#16
+filter_sz1 = 5#5
+num_filters1 = 16#16
 
 # Conv Layer 2
-filter_sz2 = 3#5
-num_filters2 = 20#36
+filter_sz2 = 5#5
+num_filters2 = 36#36
 
 # Fully connected
-fc_size = 100#128
+fc_size = 128#128
 
 ##### Data dimentions #####
 image_size = CONST.LIDAR_DATA_SIZE      
