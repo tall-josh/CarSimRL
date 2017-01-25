@@ -59,7 +59,7 @@ car.attachLidar(lidar)
 all_sprites.add(car)
 
 # initalise 
-state = st.StateTracker(CONST.STATE_MATRIX_SIZE[0], CONST.STATE_MATRIX_SIZE[1], CONST.STATE_MATRIX_SIZE[2])
+state = st.StateTracker()
 
 # data logging
 states = []
@@ -152,7 +152,7 @@ for i in range(epochs):
     
         # Returns quality estimates for all posiable actions
         qMatrix = dqnn.getQMat(state.state.flatten())
-        state_0 = state.state
+        state_0_flat = state.state.flatten()
         
         ##### SELECT ACTION #####
         # select random action or use best action from qMatrix
@@ -193,23 +193,24 @@ for i in range(epochs):
             car.terminal = True
             print("Terminal Goal")
         if len(replay) < buffer:
-            replay.append((state_0, action_idx, reward, state.state))
+            replay.append((state_0_flat, action_idx, reward, state.state))
         else:
             if h < (buffer-1):
                 h += 1
             else:
                 h = 0
             # when replay buffer full, just overwrite from idx[0] rather than clearing and starting again
-            replay[h] = (state_0.flatten(), action_idx, reward, state.state.flatten())
+            state_1_flat = state.state.flatten()
+            replay[h] = (state_0_flat, action_idx, reward, state_1_flat)
             
             batch = random.sample(replay, batch_size)
             target_batch = []
             for element in batch:
                 old_state, action, reward, new_state = element
-                q_mat_old = dqnn.getQMat(old_state)
+                q_mat_old = dqnn.getQMat(old_state.flatten())
                 q_val_old = np.argmax(q_mat_old)
                 
-                q_mat_new = dqnn.getQMat(new_state)
+                q_mat_new = dqnn.getQMat(new_state.flatten())
                 q_val_new = np.argmax(q_mat_new)
         
                 target_q = reward + (gamma*qMax)

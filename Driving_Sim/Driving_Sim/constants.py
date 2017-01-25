@@ -55,6 +55,7 @@ LIDAR_RES = 5 # one pixle is approx 10cm
 LIDAR_STEP = LIDAR_SWEEP / (LIDAR_COUNT - 1)
 LIDAR_DATA_SIZE = (LIDAR_COUNT, (LIDAR_RANGE // LIDAR_RES))
 STATE_MATRIX_SIZE = LIDAR_DATA_SIZE
+STATE_MATRIX_FLAT_SZ = STATE_MATRIX_SIZE[0]*STATE_MATRIX_SIZE[1]
 
 HISTORY_DEPTH = 4
 FRAME_HISTORY_SIZE = (HISTORY_DEPTH, LIDAR_COUNT, (LIDAR_RANGE // LIDAR_RES))
@@ -78,15 +79,7 @@ ACTION_AND_COSTS = [('do_nothing',           0),
                     ('change_left',         -1),
                     ('change_right',        -1),
                     ('break',               -1),
-                    ('accelerate',          -1),
-                    ('medium_right',        -3),
-                    ('hard_right',          -5),
-                    ('soft_break',          -1),
-                    ('medium_break',        -3),
-                    ('hard_break',          -5),
-                    ('soft_acceleration',   -1),
-                    ('medium_acceleration', -3),
-                    ('hard_acceleration',   -5)]
+                    ('accelerate',          -1)]
            
 
 URGENCY = {0: 'out_of_range',

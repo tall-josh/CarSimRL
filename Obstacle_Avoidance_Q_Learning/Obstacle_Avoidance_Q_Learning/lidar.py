@@ -15,7 +15,7 @@ class Lidar(pygame.sprite.Sprite):
         self.y0 = anchorY
         self.color = CONST.COLOR_BLUE
         self.increments = []
-#        self.reward = 0
+        self.reward = 0
         
         for i in range(CONST.LIDAR_COUNT):
             b = beam.Beam(i)
@@ -59,6 +59,7 @@ class Lidar(pygame.sprite.Sprite):
         self.closest_dist = CONST.LIDAR_RANGE
         self.onehot = np.zeros(CONST.LIDAR_DATA_SIZE)
         
+        #sote indexes of obstacles from nearest to furthest
         sorted_idx_list = self.sortNearestObstacles(anchorX, anchorY, obstacle_list)
         
         for i in range(len(self.beams)):
@@ -70,7 +71,5 @@ class Lidar(pygame.sprite.Sprite):
             if self.beams[i].dist < self.closest_dist:                              
                 self.closest_dist = self.beams[i].dist
                 
-        
-#        self.reward = self.getReward(self.closest_dist)
-        self.onehot = self.onehot.flatten()
+        self.onehot = self.onehot
         

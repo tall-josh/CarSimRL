@@ -1,12 +1,9 @@
 # -*- coding: utf-8 -*-
 
-import matplotlib.pyplot as plt
 import tensorflow as tf
 import numpy as np
-from sklearn.metrics import confusion_matrix
 import time
 from datetime import timedelta
-import math
 import constants as CONST
 
 def new_weights(shape):
@@ -135,8 +132,8 @@ num_filters2 = 36#36
 fc_size = 128#128
 
 ##### Data dimentions #####
-image_size = CONST.LIDAR_DATA_SIZE      
-image_size_flat = CONST.LIDAR_DATA_SIZE[0] * CONST.LIDAR_DATA_SIZE[1]
+image_size = CONST.STATE_MATRIX_SIZE      
+image_size_flat = CONST.STATE_MATRIX_FLAT_SZ
 num_channels = 1
 num_classes = 5
 

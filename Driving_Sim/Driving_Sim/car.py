@@ -13,9 +13,8 @@ class Car(pygame.sprite.Sprite):
     without having to create a whole new oject.
     '''
     def reInit(self, lane_idx):
-        self.rect = self.image.get_rect() # get rect from pygame sprite object            
         self.rect.center = (0, CONST.LANES[lane_idx])
-        self.goal = (self.rect.x + 50, CONST.LANES[lane_idx])
+        self.carrot = (self.rect.x + 50, CONST.LANES[lane_idx])
         self.at_goal = False
         self.velx = 0
         self.vely = 0
@@ -27,6 +26,7 @@ class Car(pygame.sprite.Sprite):
         #Q-Learning Current Reward
         self.reward = 0
 
+
         
              
     # Sprite for the player
@@ -34,11 +34,15 @@ class Car(pygame.sprite.Sprite):
         pygame.sprite.Sprite.__init__(self)
         self.lidar = None #need to attach using attachLidar(self, lidar)
         self.image = pygame.image.load(car_art)
+        self.rect = self.image.get_rect() # get rect from pygame sprite object            
         self.__image_master = self.image
         self.speed = CONST.INIT_SPEED + 1
-        self.goal_dist = 100
+        self.carrot_dist = 100
         self.PID = (0.5, 0.1, 0)
         self.delta_heading = 0
+        self.goal = self.rect.center[0] + 100
+        self.goal_increment = 100
+        self.goal_count = 1
         self.reInit(lane_idx)
         
         
@@ -47,30 +51,32 @@ class Car(pygame.sprite.Sprite):
         
     # Updates car's controles and allocates rewards asociated
     # with the action taken. (Note: This does NOT allocate
-    # rewards asociated with obstacel proximity)
+    # rewards asociated with colisions and goals)
     def updateAction(self, action):
         self.latest_action = action
-        self.reward = CONST.ACTION_AND_COSTS[action][1]
         action_str = CONST.ACTION_AND_COSTS[action][0]
 
         if action_str == 'do_nothing':
-            return            
-        if action_str == 'change_left':
+            pass
+        elif action_str == 'change_left':
             self.lane_idx -= 1
-        if action_str == 'change_right':
+        elif action_str == 'change_right':
             self.lane_idx += 1
-        if action_str == 'break':
+        elif action_str == 'break':
             self.speed -= CONST.CAR_FORWARD_ACCEL
-        if action_str == 'accelerate':
+        elif action_str == 'accelerate':
             self.speed += CONST.CAR_FORWARD_ACCEL
-
-        #check lanes are valid
-        if self.lane_idx < 0:
-            self.reward = CONST.REWARDS['terminal_crash']
-            self.lane_idx = 0
-        if self.lane_idx > 2:
-            self.reward = CONST.REWARDS['terminal_crash']
-            self.lane_idx = 2
+        
+        # apply cost of action
+        self.reward = CONST.ACTION_AND_COSTS[action][1]
+        
+#        #check lanes are valid
+#        if self.lane_idx < 0:
+#            self.reward = CONST.REWARDS['terminal_crash']
+#            #self.lane_idx = 0
+#        if self.lane_idx > 2:
+#            self.reward = CONST.REWARDS['terminal_crash']
+            #self.lane_idx = 2
             
 #        if action_str == 'do_nothing':
 #            return            
@@ -101,10 +107,10 @@ class Car(pygame.sprite.Sprite):
             
     # Exhibits the go to goal behaviour         
     def doPID(self, delta_time):
-        dx = self.goal[0] - self.rect.centerx
-        dy = self.rect.centery - self.goal[1]
-        rad_to_goal = math.atan2(dy,dx)
-        delta_rad =  rad_to_goal - self.heading
+        dx = self.carrot[0] - self.rect.centerx
+        dy = self.rect.centery - self.carrot[1]
+        rad_to_carrot = math.atan2(dy,dx)
+        delta_rad =  rad_to_carrot - self.heading
         delta_rad = math.atan2(math.sin(delta_rad), math.cos(delta_rad))
         self.delta_heading += delta_rad
         self.heading += (self.PID[0] * delta_rad) + (self.PID[1] * delta_time * delta_time * self.delta_heading) + (self.PID[2] * delta_rad/delta_time)
@@ -114,10 +120,21 @@ class Car(pygame.sprite.Sprite):
     def updateSensors(self, obstacles):
         self.lidar.update(self.rect.centerx, self.rect.centery, math.degrees(self.heading), obstacles)
         self.sensor_data = self.lidar.onehot
-        self.reward += self.lidar.reward
     
     def isAtGoal(self):
-        self.at_goal = (self.rect.x > CONST.SCREEN_WIDTH)
+        self.at_goal = (self.rect.x > self.goal)
+        if self.at_goal: 
+            print("Test1")
+            self.goal_count += 1
+        if self.goal_count % 20 == 0:
+            print("Test2")
+            self.goal += self.goal_increment
+        if self.goal > CONST.SCREEN_WIDTH:
+            print("Test3")
+            self.goal = CONST.SCREEN_WIDTH
+            self.goal_increment = 0
+        return self.at_goal
+                
         
     def isOutOfBounds(self):
         if (self.rect.x < - CONST.SCREEN_PADDING or 
@@ -150,9 +167,8 @@ class Car(pygame.sprite.Sprite):
        self.rect.x += self.velx
        self.rect.y -= self.vely
        
-       self.goal = (self.rect.x + self.goal_dist, CONST.LANES[self.lane_idx])
+       self.carrot = (self.rect.x + self.carrot_dist, CONST.LANES[self.lane_idx])
        
-       self.isAtGoal()
        self.isOutOfBounds()
        #print("Heading", self.heading)
        

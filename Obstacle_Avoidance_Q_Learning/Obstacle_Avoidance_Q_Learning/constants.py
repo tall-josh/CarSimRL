@@ -24,12 +24,11 @@ SCREEN_WIDTH = math.ceil(CELLS_PER_LANE*CAR_SAFE_BUBBLE)  #keep in multaples of 
 SCREEN_HEIGHT = 400
 SCREEN_SIZE = (SCREEN_WIDTH, SCREEN_HEIGHT)
 SCREEN_PADDING = 200
-SCREEN_FPS = 30
+SCREEN_FPS = 5
 
 ONE_DEGREE = 3.14159 / 180.0
 CAR_ANGULAR_ACCEL = ONE_DEGREE * 1
-CAR_FORWARD_ACCEL = 0.5
-
+CAR_FORWARD_ACCEL = 0.10
 LANE_WIDTH = 40
 LANES = [SCREEN_HEIGHT//2 - (2*LANE_WIDTH),
          SCREEN_HEIGHT//2 - (1*LANE_WIDTH),
@@ -55,9 +54,11 @@ LIDAR_SWEEP = 220
 LIDAR_RES = 5 # one pixle is approx 10cm
 LIDAR_STEP = LIDAR_SWEEP / (LIDAR_COUNT - 1)
 LIDAR_DATA_SIZE = (LIDAR_COUNT, (LIDAR_RANGE // LIDAR_RES))
+STATE_MATRIX_SIZE = LIDAR_DATA_SIZE
+STATE_MATRIX_FLAT_SZ = STATE_MATRIX_SIZE[0]*STATE_MATRIX_SIZE[1]
 
 HISTORY_DEPTH = 4
-STATE_MATRIX_SIZE = (HISTORY_DEPTH, LIDAR_COUNT, (LIDAR_RANGE // LIDAR_RES))
+FRAME_HISTORY_SIZE = (HISTORY_DEPTH, LIDAR_COUNT, (LIDAR_RANGE // LIDAR_RES))
 #
 #ACTION_AND_COSTS = [('do_nothing',           0),
 #                    ('soft_left',           -1),
@@ -89,13 +90,13 @@ URGENCY = {0: 'out_of_range',
           5: 'terminal_goal',
           6: 'terminal_crash'}
 
-REWARDS =           {URGENCY[0] :  0,  #o_o_r
-                     URGENCY[1] :  0,  #safe
-                     URGENCY[2] :  0,  #unease
-                     URGENCY[3] :  0,  #dangerous
-                     URGENCY[4] :  0, #emergency
+REWARDS =           {URGENCY[0] :   0,  #o_o_r
+                     URGENCY[1] :  -1,  #safe
+                     URGENCY[2] :  -4,  #unease
+                     URGENCY[3] :  -6,  #dangerous
+                     URGENCY[4] :  -10, #emergency
                      URGENCY[5] :   10, #goal
-                     URGENCY[6] :  -10} #crash
+                     URGENCY[6] :  -20} #crash
 
 LIDAR_COLORS =      {URGENCY[0] : COLOR_BLUE,
                      URGENCY[1] : COLOR_GREEN,

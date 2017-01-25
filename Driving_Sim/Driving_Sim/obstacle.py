@@ -28,7 +28,7 @@ class Obstacle(car.Car):
         self.heading = CONST.DIRECTIONS['l_to_r']
         if self.direction == 'r_to_l':
             self.heading = CONST.DIRECTIONS['r_to_l']
-            self.goal_dist = self.goal_dist * -1
+            self.carrot_dist = self.carrot_dist * -1
             minX = CONST.SCREEN_WIDTH//2
             maxX = CONST.SCREEN_WIDTH + CONST.SCREEN_PADDING
         
@@ -42,7 +42,7 @@ class Obstacle(car.Car):
 #                           ('tr':),
 #                           ('bl':),
 #                           ('br':)}
-        self.goal = ((locX + self.goal_dist), locY)
+        self.carrot = ((locX + self.carrot_dist), locY)
         self.rect.center = (locX, locY)
         self.speed = CONST.INIT_SPEED
         self.merge_left_possiable = False
