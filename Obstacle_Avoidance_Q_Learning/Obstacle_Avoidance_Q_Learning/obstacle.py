@@ -1,63 +1,117 @@
 # -*- coding: utf-8 -*-
-import pygame
 import random
 import constants as CONST
+import car
 import math
 
-class Obstacle(pygame.sprite.Sprite):
-    # Sprite for the player
-    def __init__(self, img_file, playerX, playerY, lidar_range):
-        pygame.sprite.Sprite.__init__(self)
-        
-        self.image = pygame.image.load(img_file)
-        self.__image_master = self.image
-        self.rect = self.image.get_rect()
-        self.rect.center = (0,0)#(random.randint(-100, CONST.SCREEN_WIDTH + 100), random.randint(-100, CONST.SCREEN_HEIGHT+100))            
-        self.heading = 0#random.randint(0,359)
-        self.speed = 0#random.randint(CONST.OBSTACLE_MIN_SPEED, CONST.OBSTACLE_MAX_SPEED)
-        #self.initState(playerX, playerY, lidar_range)
-        self.initStateStatic()
-        self.out_of_range = False
-        self.tag = False #Flag to indicate if Obstacle is seen by lidar
-     
-    def initStateStatic(self):
-        
-        self.rect.center = (CONST.SCREEN_WIDTH//4, CONST.SCREEN_HEIGHT//2 + 200)
-        self.heading = 0
-        self.speed = 0
-        
-    def initState(self, playerX, playerY, lidar_range):
-        
-        self.rect.center = (random.randint(-100, CONST.SCREEN_WIDTH + 100), random.randint(-100, CONST.SCREEN_HEIGHT+100))            
-        a = self.rect.centerx - playerX
-        b = self.rect.centery - playerY
-        dist_to_player = math.sqrt((a*a)+(b*b))
-        if dist_to_player < lidar_range:
-            self.initState(playerX, playerY, lidar_range)
-        
-        self.heading = random.randint(0,359)
-        self.speed = random.randint(CONST.OBSTACLE_MIN_SPEED, CONST.OBSTACLE_MAX_SPEED)
+class Obstacle(car.Car):        
     
+    def isAwayFromPlayer(self, playerX, playerY, locX, locY):
+        #print(playerX, ", ", playerY,", ", locX,", ", locY)
+        if abs(playerX - locX) > (1.5*CONST.CAR_LENGTH): 
+            return True
+        return (abs(playerY - locY) > 0) #overlapping
+
+    def isAwayFromOtherObs(self, other_obs, locX, locY):
+        for obs in other_obs:
+            if (abs(obs.rect.center[0] - locX) < (1.1*CONST.CAR_LENGTH) and
+                abs(obs.rect.center[1] - locY) < CONST.LANE_WIDTH*0.8):
+                    return False                
+        return True
         
-    def update(self):
+    # Used to init a dynamic obstacle
+    def reInitObs(self, playerX, playerY, other_obs):
+        locX = 0
+        locY = CONST.LANES[self.lane_idx]
+        minX = -CONST.SCREEN_PADDING
+        maxX = math.ceil(CONST.SCREEN_WIDTH * 0.5)
+        self.heading = CONST.DIRECTIONS['l_to_r']
+        if self.direction == 'r_to_l':
+            self.heading = CONST.DIRECTIONS['r_to_l']
+            self.carrot_dist = self.carrot_dist * -1
+            minX = CONST.SCREEN_WIDTH//2
+            maxX = CONST.SCREEN_WIDTH + CONST.SCREEN_PADDING
+        
+        valid = False
+        while not valid:
+            locX = random.randint(minX, maxX)
+            valid = (self.isAwayFromPlayer(playerX, playerY, locX, locY) and
+                     self.isAwayFromOtherObs(other_obs, locX, locY))
+                
+#        self.safety_box = {('tl': [(self.rect.center[0]-(CONST.CAR_SAFE_BUBBLE//2)), ]),
+#                           ('tr':),
+#                           ('bl':),
+#                           ('br':)}
+        self.carrot = ((locX + self.carrot_dist), locY)
+        self.rect.center = (locX, locY)
+        self.speed = CONST.INIT_SPEED
+        self.merge_left_possiable = False
+        self.merge_right_possiable = False
+    
+    def checkMerge(self, other_obs):
+        self.merge_left_possiable = True
+        self.merge_right_possiable = True
+        for obs in other_obs:
+            if not (obs.rect.center == self.rect.center):
+                # Check to for obs my right AND that its not in an outside lane                
+                if (self.direction == 'l_to_r'):
+                    '''left is NOT ok'''
+                    if (self.lane_idx == 0):
+                        self.merge_left_possiable = False
+                    elif (abs(self.rect.center[1] - obs.rect.center[1]) < (CONST.LANE_WIDTH*1.1) and
+                    abs(self.rect.center[0] - obs.rect.center[0] < CONST.CAR_SAFE_BUBBLE)) :
+                        self.merge_left_possiable = False
+                        
+                    '''right is NOT ok'''
+                    if (self.lane_idx == 2): 
+                        self.merge_right_possiable = False
+                    elif (abs(obs.rect.center[1] - self.rect.center[1]) < (CONST.LANE_WIDTH*1.1) and
+                    abs(self.rect.center[0] - obs.rect.center[0]) < CONST.CAR_SAFE_BUBBLE):
+                        self.merge_right_possiable = False
+                        
+                else: ###  r_to_l
+                    '''left is NOT ok'''
+                    if (self.lane_idx == len(CONST.LANES) - 1):
+                        self.merge_left_possiable = False
+                    elif (abs(self.rect.center[1] - obs.rect.center[1]) < (CONST.LANE_WIDTH*1.1) and
+                    abs(self.rect.center[0] - obs.rect.center[0] < CONST.CAR_SAFE_BUBBLE)) :
+                        self.merge_left_possiable = False
+                        
+                    '''right is NOT ok'''
+                    if (self.lane_idx == 3): 
+                        self.merge_right_possiable = False
+                    elif (abs(obs.rect.center[1] - self.rect.center[1]) < (CONST.LANE_WIDTH*1.1) and
+                    abs(self.rect.center[0] - obs.rect.center[0]) < CONST.CAR_SAFE_BUBBLE):
+                        self.merge_right_possiable = False
+    def performMergeLeft(self, obstacles):
+        self.checkMerge(obstacles)
+        if self.merge_left_possiable:
             
-        self.velx = self.speed * (math.cos(self.heading))
-        self.vely = self.speed * (math.sin(self.heading))
+            if self.direction == 'l_to_r':
+                self.lane_idx -= 1
+            else:
+                self.lane_idx += 1
+            return True
+        else: return False
+            
+    def performMergeRight(self, obstacles):
+        self.checkMerge(obstacles)
+        if self.merge_right_possiable:
+            if self.direction == 'l_to_r':
+                self.lane_idx += 1
+            else:
+                self.lane_idx -= 1
+            return True
+        else: return False
+
         
-        #old centre to realign after rotation
-        old_cen = self.rect.center
-        #perform rotation
-        self.image = pygame.transform.rotate(self.__image_master, math.degrees(self.heading))
-        self.rect = self.image.get_rect()
-        self.rect.center = old_cen
-        
-        self.rect.x += self.velx
-        self.rect.y -= self.vely
-        
-        if (self.rect.left > CONST.SCREEN_WIDTH+100) or (self.rect.right < -100) or (self.rect.top > CONST.SCREEN_HEIGHT+100) or (self.rect.bottom < -100):
-            self.out_of_range = True
-        else:
-            self.out_of_range = False
+    # Sprite for the player
+    def __init__(self, lane_idx, direction, car_art, playerX, playerY, other_obs=[]):
+        super(Obstacle, self).__init__(lane_idx, car_art)
+        self.out_of_range = False
+        self.direction = direction
+        self.tag = False #Flag to indicate if Obstacle is seen by lidar        
+        self.reInitObs(playerX, playerY, other_obs)
                
         
         

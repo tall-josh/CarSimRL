@@ -124,7 +124,7 @@ except:
     pass
         
 # Conv Layer 1
-filter_sz1 = 5#5
+filter_sz1 = 3#5
 num_filters1 = 16#16
 
 # Conv Layer 2
@@ -138,7 +138,7 @@ fc_size = 128#128
 image_size = CONST.LIDAR_DATA_SIZE      
 image_size_flat = CONST.LIDAR_DATA_SIZE[0] * CONST.LIDAR_DATA_SIZE[1]
 num_channels = 1
-num_classes = 13
+num_classes = 5
 
 # placeholders for input nodes
 state = tf.placeholder(tf.float32, shape=[None, image_size_flat], name = 'state')
