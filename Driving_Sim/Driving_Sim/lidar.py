@@ -30,17 +30,17 @@ class Lidar(pygame.sprite.Sprite):
             
     # uses the closest object detected by the lidar to determine 
     # the reward (penality)
-    def getReward(self, closest_object):
-        if 0 < closest_object <= CONST.LIDAR_RANGE * 0.25:
-            return CONST.REWARDS["emergency"]
-        if CONST.LIDAR_RANGE * 0.25 < closest_object <= CONST.LIDAR_RANGE * 0.5:
-            return CONST.REWARDS["dangerous"]
-        if CONST.LIDAR_RANGE * 0.5 < closest_object <= CONST.LIDAR_RANGE * 0.75:
-            return CONST.REWARDS["uneasy"]
-        if CONST.LIDAR_RANGE * 0.75 < closest_object < CONST.LIDAR_RANGE:
-            return CONST.REWARDS["safe"]
-        else:
-            return CONST.REWARDS["out_of_range"]
+#    def getReward(self, closest_object):
+#        if 0 < closest_object <= CONST.LIDAR_RANGE * 0.25:
+#            return CONST.REWARDS["emergency"]
+#        if CONST.LIDAR_RANGE * 0.25 < closest_object <= CONST.LIDAR_RANGE * 0.5:
+#            return CONST.REWARDS["dangerous"]
+#        if CONST.LIDAR_RANGE * 0.5 < closest_object <= CONST.LIDAR_RANGE * 0.75:
+#            return CONST.REWARDS["uneasy"]
+#        if CONST.LIDAR_RANGE * 0.75 < closest_object < CONST.LIDAR_RANGE:
+#            return CONST.REWARDS["safe"]
+#        else:
+#            return CONST.REWARDS["out_of_range"]
 
     def sortNearestObstacles(self, cenX, cenY, obstacle_list):
         sqr_dists = []
@@ -59,6 +59,7 @@ class Lidar(pygame.sprite.Sprite):
         self.closest_dist = CONST.LIDAR_RANGE
         self.onehot = np.zeros(CONST.LIDAR_DATA_SIZE)
         
+        #sote indexes of obstacles from nearest to furthest
         sorted_idx_list = self.sortNearestObstacles(anchorX, anchorY, obstacle_list)
         
         for i in range(len(self.beams)):
@@ -70,7 +71,5 @@ class Lidar(pygame.sprite.Sprite):
             if self.beams[i].dist < self.closest_dist:                              
                 self.closest_dist = self.beams[i].dist
                 
-        
-        self.reward = self.getReward(self.closest_dist)
-        self.onehot = self.onehot.flatten()
+        self.onehot = self.onehot
         
