@@ -16,7 +16,7 @@ import numpy as np
 import state_tracker as st
 import random
 
-log_data = True
+log_data = False
 if log_data:
     file_states = open("states_file.txt", 'w')
     file_states.close()
@@ -50,7 +50,7 @@ car.attachLidar(lidar)
 all_sprites.add(car)
 
 # initalise 
-state = st.StateTracker(CONST.STATE_MATRIX_SIZE[0], CONST.STATE_MATRIX_SIZE[1], CONST.STATE_MATRIX_SIZE[2])
+state = st.StateTracker()
 # data logging
 states = []
 actions = []
@@ -165,6 +165,8 @@ while bears_shit_in_woods:
         collisions = pygame.sprite.spritecollide(car, obstacles, False)    # Check for agent obstacle collisions
         ##### Observe new state (s') #####
         car.updateSensors(obstacles)   # sensor update      
+        state.update(car.sensor_data)
+        
 
         reward = car.reward 
         
