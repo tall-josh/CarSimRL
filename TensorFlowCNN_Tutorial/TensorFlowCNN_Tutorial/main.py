@@ -13,8 +13,8 @@ import numpy as np
 from sklearn.metrics import confusion_matrix
 import time
 from datetime import timedelta
-import math
 
+NUM_ITERATIONS = 1000
 # Convolutional Layer 1.
 filter_size1 = 5          # Convolution filters are 5 x 5 pixels.
 num_filters1 = 16         # There are 16 of these filters.
@@ -476,7 +476,7 @@ def print_test_accuracy(show_example_errors=False,
         plot_confusion_matrix(cls_pred=cls_pred)
         
 print_test_accuracy()
-optimize(num_iterations=100)
+optimize(num_iterations=NUM_ITERATIONS)
 print_test_accuracy(show_example_errors=True)
 
 ###TRY your own
