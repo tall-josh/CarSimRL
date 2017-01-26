@@ -16,6 +16,7 @@ class Lidar(pygame.sprite.Sprite):
         self.color = CONST.COLOR_BLUE
         self.increments = []
         self.reward = 0
+        self.tail_gating = False
         
         for i in range(CONST.LIDAR_COUNT):
             b = beam.Beam(i)
@@ -55,6 +56,7 @@ class Lidar(pygame.sprite.Sprite):
         #obstacle_list.sprites() = [obstacle_list.sprites()[i] for i in idxs]
 
     def update(self, anchorX, anchorY, anchor_deg, obstacle_list):
+        self.tail_gating = False
         #updates beam array and also tracks the incoming data to keep track of the most 'urgent' obstacle
         self.closest_dist = CONST.LIDAR_RANGE
         self.onehot = np.zeros(CONST.LIDAR_DATA_SIZE)
@@ -70,6 +72,10 @@ class Lidar(pygame.sprite.Sprite):
             
             if self.beams[i].dist < self.closest_dist:                              
                 self.closest_dist = self.beams[i].dist
+            if ((i > (len(self.beams)//2) - 2) and
+                (i < (len(self.beams)//2) + 2) and
+                (self.beams[i].dist < CONST.TAIL_GATE_DIST)):
+                self.tail_gating = True
                 
         self.onehot = self.onehot
         

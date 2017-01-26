@@ -56,14 +56,14 @@ class Obstacle(car.Car):
                 # Check to for obs my right AND that its not in an outside lane                
                 if (self.direction == 'l_to_r'):
                     '''left is NOT ok'''
-                    if (self.lane_idx == 0):
+                    if (self.lane_idx == CONST.OBS_LN_LtoR_MIN):
                         self.merge_left_possiable = False
                     elif (abs(self.rect.center[1] - obs.rect.center[1]) < (CONST.LANE_WIDTH*1.1) and
                     abs(self.rect.center[0] - obs.rect.center[0] < CONST.CAR_SAFE_BUBBLE)) :
                         self.merge_left_possiable = False
                         
                     '''right is NOT ok'''
-                    if (self.lane_idx == 2): 
+                    if (self.lane_idx == CONST.OBS_LN_LtoR_MAX): 
                         self.merge_right_possiable = False
                     elif (abs(obs.rect.center[1] - self.rect.center[1]) < (CONST.LANE_WIDTH*1.1) and
                     abs(self.rect.center[0] - obs.rect.center[0]) < CONST.CAR_SAFE_BUBBLE):
@@ -71,14 +71,14 @@ class Obstacle(car.Car):
                         
                 else: ###  r_to_l
                     '''left is NOT ok'''
-                    if (self.lane_idx == len(CONST.LANES) - 1):
+                    if (self.lane_idx == CONST.OBS_LN_RtoL_MAX):
                         self.merge_left_possiable = False
                     elif (abs(self.rect.center[1] - obs.rect.center[1]) < (CONST.LANE_WIDTH*1.1) and
                     abs(self.rect.center[0] - obs.rect.center[0] < CONST.CAR_SAFE_BUBBLE)) :
                         self.merge_left_possiable = False
                         
                     '''right is NOT ok'''
-                    if (self.lane_idx == 3): 
+                    if (self.lane_idx == CONST.OBS_LN_RtoL_MIN): 
                         self.merge_right_possiable = False
                     elif (abs(obs.rect.center[1] - self.rect.center[1]) < (CONST.LANE_WIDTH*1.1) and
                     abs(self.rect.center[0] - obs.rect.center[0]) < CONST.CAR_SAFE_BUBBLE):

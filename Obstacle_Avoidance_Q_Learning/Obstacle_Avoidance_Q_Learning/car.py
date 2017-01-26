@@ -44,6 +44,7 @@ class Car(pygame.sprite.Sprite):
         self.goal_increment = 100
         self.goal_count = 1
         self.reInit(lane_idx)
+        self.tail_gaiting = False
         
         
     def attachLidar(self, to_attach):
@@ -66,45 +67,10 @@ class Car(pygame.sprite.Sprite):
             self.speed -= CONST.CAR_FORWARD_ACCEL
         elif action_str == 'accelerate':
             self.speed += CONST.CAR_FORWARD_ACCEL
-        
+    
         # apply cost of action
         self.reward = CONST.ACTION_AND_COSTS[action][1]
-        
-#        #check lanes are valid
-#        if self.lane_idx < 0:
-#            self.reward = CONST.REWARDS['terminal_crash']
-#            #self.lane_idx = 0
-#        if self.lane_idx > 2:
-#            self.reward = CONST.REWARDS['terminal_crash']
-            #self.lane_idx = 2
-            
-#        if action_str == 'do_nothing':
-#            return            
-#        if action_str == 'soft_left':
-#            self.heading += 1*CONST.ONE_DEGREE            
-#        if action_str == 'medium_left':
-#            self.heading += 3*CONST.ONE_DEGREE            
-#        if action_str == 'hard_left':
-#            self.heading += 9*CONST.ONE_DEGREE            
-#        if action_str == 'soft_right':
-#            self.heading -= 1*CONST.ONE_DEGREE            
-#        if action_str == 'medium_right':
-#            self.heading -= 3*CONST.ONE_DEGREE            
-#        if action_str == 'hard_right':
-#            self.heading -= 9*CONST.ONE_DEGREE            
-#        if action_str == 'soft_break':
-#            self.speed -= 0.1            
-#        if action_str == 'medium_break':
-#            self.speed -= 0.3            
-#        if action_str == 'hard_break':
-#            self.speed -= 0.9            
-#        if action_str == 'soft_acceleration':
-#            self.speed += 0.1
-#        if action_str == 'medium_acceleration':
-#            self.speed += 0.3
-#        if action_str == 'hard_acceleration':
-#            self.speed += 0.9
-            
+
     # Exhibits the go to goal behaviour         
     def doPID(self, delta_time):
         dx = self.carrot[0] - self.rect.centerx
@@ -120,19 +86,20 @@ class Car(pygame.sprite.Sprite):
     def updateSensors(self, obstacles):
         self.lidar.update(self.rect.centerx, self.rect.centery, math.degrees(self.heading), obstacles)
         self.sensor_data = self.lidar.onehot
+        self.tail_gaiting = self.lidar.tail_gating
     
     def isAtGoal(self):
+#        self.at_goal = (self.rect.x > CONST.SCREEN_WIDTH) 
         self.at_goal = (self.rect.x > self.goal)
         if self.at_goal: 
-            print("Test1")
             self.goal_count += 1
-        if self.goal_count % 20 == 0:
-            print("Test2")
-            self.goal += self.goal_increment
+            if self.goal_count % 20 == 0:
+                self.goal += self.goal_increment
+                
         if self.goal > CONST.SCREEN_WIDTH:
-            print("Test3")
             self.goal = CONST.SCREEN_WIDTH
             self.goal_increment = 0
+
         return self.at_goal
                 
         
@@ -172,7 +139,7 @@ class Car(pygame.sprite.Sprite):
        self.isOutOfBounds()
        #print("Heading", self.heading)
        
-           
+       
          
            
 

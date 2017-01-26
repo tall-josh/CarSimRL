@@ -19,6 +19,7 @@ class Beam(pygame.sprite.Sprite):
             for step in lidar.increments:
                 self.x1 = anchorX + (step * math.cos(math.radians(self.beam_idx*CONST.LIDAR_STEP - anchor_deg + lidar.start_ang_deg - 90)))
                 self.y1 = anchorY + (step * math.sin(math.radians(self.beam_idx*CONST.LIDAR_STEP - anchor_deg + lidar.start_ang_deg - 90)))
+                self.dist = step
                 if obstacle_list.sprites()[idx].rect.collidepoint(self.x1, self.y1):
                     self.dist = step
 #                   select color for different ranges
@@ -31,9 +32,12 @@ class Beam(pygame.sprite.Sprite):
                     if CONST.LIDAR_RANGE * 0.75 < step < CONST.LIDAR_RANGE:
                         self.color = CONST.COLOR_GREEN
                     return
-                    
-                self.dist = step
-        return
+                elif self.y1 > CONST.LANES[len(CONST.LANES)-1] + CONST.LANE_WIDTH//2:
+                    self.dist = step
+                    return
+                elif self.y1 < CONST.LANES[0] - (CONST.LANE_WIDTH//2):
+                    self.dist = step    
+                    return
         
                    
                     

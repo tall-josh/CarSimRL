@@ -51,7 +51,8 @@ all_sprites = pygame.sprite.Group()
 obstacles = pygame.sprite.Group()
 
 # Create Agent and attach sensor
-car = car.Car(lane_idx=random.randint(0,2),  
+
+car = car.Car(lane_idx=random.randint(CONST.CAR_LANE_MIN, CONST.CAR_LANE_MAX),
               car_art = art.cars['player'])
 
 lidar = lidar.Lidar(car.rect.centerx, car.rect.centery, math.degrees(car.heading))
@@ -66,11 +67,10 @@ states = []
 actions = []
 rewards = []
 
-# super sloppy repeting code like this soz !soz.
 def doObsMerge(merge_count):
     if ( (random.uniform(0,1) < CONST.MERGE_PROB) and
          (merge_count < CONST.MAX_NO_MERGES) ):
-        
+        print("try")
         rand_obs = random.randint(0,len(obstacles)-1)
         left_is_0_right_is_1 = random.randint(0,1)
         
@@ -85,7 +85,7 @@ def doObsMerge(merge_count):
 
 def initObstacles(num_l_to_r, num_r_to_l):
     for i in range(num_l_to_r):
-        obs = obstacle.Obstacle(random.randint(0,2),
+        obs = obstacle.Obstacle(random.randint(CONST.OBS_LN_LtoR_MIN,CONST.OBS_LN_LtoR_MAX),
                                 "l_to_r",
                                 art.cars['gray'],
                                 car.rect.centerx, 
@@ -95,7 +95,7 @@ def initObstacles(num_l_to_r, num_r_to_l):
         obstacles.add(obs)
         
     for i in range(num_r_to_l):
-        obs = obstacle.Obstacle(random.randint(3,5),
+        obs = obstacle.Obstacle(random.randint(CONST.OBS_LN_RtoL_MIN,CONST.OBS_LN_RtoL_MAX),
                             "r_to_l",
                             art.cars['gray'],
                             car.rect.centerx, 
@@ -115,7 +115,7 @@ def initSimulation(car, state):
     all_sprites.empty()
     all_sprites.add(car)
     
-    car.reInit(lane_idx = random.randint(0,2))
+    car.reInit(lane_idx=random.randint(CONST.CAR_LANE_MIN, CONST.CAR_LANE_MAX))
     
     initObstacles(CONST.OBS_L_TO_R,CONST.OBS_R_TO_L)    
         
@@ -131,21 +131,24 @@ epochs = 10000
 gamma = 0.9
 epsilon = 1
 leave_program = False
-batch_size = 20
-buffer = 40
+batch_size = 50
+buffer = 100
 replay = []
 h = 0
 target_q = 0
 reward = 0
 qMax = 0
+merge_count = 0
+epoch_cnt = 0
+episode = 0
 for i in range(epochs):
     
     initSimulation(car, state)
     pigs_fly = False
-    ticks = 0;
     
     while not pigs_fly:
-        #####  PYGAME HOUSE CLEANING  #####
+        episode += 1
+        #####  PYGAME HOUSE KEEPING  #####
         # keep loop time constant
         clock.tick(CONST.SCREEN_FPS)
         screen.fill(CONST.COLOR_BLACK)
@@ -158,13 +161,13 @@ for i in range(epochs):
         # select random action or use best action from qMatrix
         action_idx = 0
         epsilon_rand = False
-##### UNCOMMENT WHEN YOU"RE DONE CHECKING CONTROLS OF CAR ######
+
         if (random.random() < epsilon):
             action_idx = random.randint(0,len(CONST.ACTION_AND_COSTS)-1)
             epsilon_rand = True
         else:
             action_idx = np.argmax(qMatrix)
-       
+        print("Action: ", CONST.ACTION_NAMES[action_idx], "-- --Epoch: ", epoch_cnt, "-- --Episode: ", episode)
         ##### Take action #####
         #print("Action: {0}".format(CONST.ACTION_AND_COSTS[action_idx]))
         car.updateAction(action_idx)  # apply action selected above
@@ -181,17 +184,28 @@ for i in range(epochs):
         ##### Generate target vector to train network #####
         target = copy.deepcopy(qMatrix)
         reward = car.reward 
+        
+        # Check for additional penalties from dangerous driving        
+        if car.tail_gaiting:
+            reward += CONST.REWARDS['tail_gate']
+            print('tail_gate')
+        
+        if car.lane_idx == 0:
+            reward += CONST.REWARDS['on_sholder']
+            print('on_sholder')
          # Check for terminal states and override 
         # reward to teminal values if necessary
-        if (collisions or (car.lane_idx < 0) or (car.lane_idx > 2)):
+        if (collisions or (car.lane_idx < 0) or (car.lane_idx > 3)):
             pigs_fly = True
             reward = CONST.REWARDS['terminal_crash']
-            print("Terminal Crash")
+            print('terminal_crash')
+        
         if car.isAtGoal():
             pigs_fly = True
             reward = CONST.REWARDS['terminal_goal']
             car.terminal = True
-            print("Terminal Goal")
+            print('terminal_goal')
+        print("Reward: ", reward)
         if len(replay) < buffer:
             replay.append((state_0_flat, action_idx, reward, state.state))
         else:
@@ -218,14 +232,16 @@ for i in range(epochs):
                 target_batch.append(target)
                 
             dqnn.fitBatch([row[0] for row in batch], target_batch)
-        print("Tick")
         if epsilon > 0.1:
             epsilon -= 1/epochs
         
-        if ticks % 20 == 0:
-            print("Ticks: ", i)
+        doObsMerge(merge_count)
+            
+        if epoch_cnt % 20 == 0:
+            print("Epochs: ", epoch_cnt)
             print("target_q: {0} = reward: {1} + gamma:{2} * (qMax: {3})".format(target_q, reward, gamma, qMax))
             print("action_idx: {0}".format(action_idx))
+            print("Episilon: ", epsilon)
             print("Q_mat: ", qMatrix)   
             
             
@@ -233,7 +249,7 @@ for i in range(epochs):
     #   respawn obstacles if they are out of range
         for obs in obstacles:            
             if obs.out_of_range:
-                obs.initState(car.rect.centerx, car.rect.centery, CONST.LIDAR_RANGE)
+                obs.reInitObs(0, CONST.LANES[random.rand(CONST.CAR_LANE_MIN,CONST.CAR_LANE_MAX)], obstacles)
                 print("Reload")
                 
 #       check if car is out of bounds
@@ -245,18 +261,19 @@ for i in range(epochs):
         all_sprites.draw(screen)
         #Drawing lane markers
         center_guard = CONST.LANES[3] + CONST.LANE_WIDTH//2
-        for i in range(-4,3):
-            thickness = 1
+        color = CONST.COLOR_ORANGE
+        for lane in CONST.LANES:
+            pygame.draw.line(screen, color, (0, lane-CONST.LANE_WIDTH//2), (CONST.SCREEN_WIDTH,  lane-CONST.LANE_WIDTH//2))
             color = CONST.COLOR_WHITE
-            if i == -1: 
-                thickness = 5
-                color = CONST.COLOR_YELLOW
-            pygame.draw.line(screen, color, (0, center_guard + (i*CONST.LANE_WIDTH)), (CONST.SCREEN_WIDTH, center_guard + (i*CONST.LANE_WIDTH)), thickness)
+        pygame.draw.line(screen, CONST.COLOR_ORANGE, (0, CONST.LANES[len(CONST.LANES)-1] + CONST.LANE_WIDTH//2), (CONST.SCREEN_WIDTH,  CONST.LANES[len(CONST.LANES)-1] + CONST.LANE_WIDTH//2))
+
+        #draw progress marker 
+        pygame.draw.line(screen, CONST.COLOR_ORANGE, (car.goal, 0), (car.goal, CONST.SCREEN_HEIGHT))
+                
+#       Draw carrot
+        pygame.draw.circle(screen, CONST.COLOR_ORANGE, (car.carrot), 5) 
         
-    #   Draw goal
-        pygame.draw.circle(screen, CONST.COLOR_WHITE, (car.carrot), 10) 
-        
-    #   DRAW MOST RECENT Lidar
+#       DRAW MOST RECENT Lidar
         for beam in car.lidar.beams:
             pygame.draw.line(screen, beam.color, (beam.x1, beam.y1), (car.rect.centerx, car.rect.centery))
     
@@ -273,7 +290,7 @@ for i in range(epochs):
         pygame.display.flip()
         ticks += 1
         #print("ticks: {0}".format(ticks))
-        
+    epoch_cnt += 1    
     if leave_program: break
 
 dqnn.session.close()
