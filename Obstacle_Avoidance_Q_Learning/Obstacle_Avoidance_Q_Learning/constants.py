@@ -71,7 +71,7 @@ LIDAR_STEP = LIDAR_SWEEP / (LIDAR_COUNT - 1)
 LIDAR_DATA_SIZE = (LIDAR_COUNT, (LIDAR_RANGE // LIDAR_RES))
 STATE_MATRIX_SIZE = LIDAR_DATA_SIZE
 STATE_MATRIX_FLAT_SZ = STATE_MATRIX_SIZE[0]*STATE_MATRIX_SIZE[1]
-
+HISTORY_WEIGHTS = [1,2,4,8] #oldest to newest
 HISTORY_DEPTH = 4
 FRAME_HISTORY_SIZE = (HISTORY_DEPTH, LIDAR_COUNT, (LIDAR_RANGE // LIDAR_RES))
 #
@@ -102,6 +102,7 @@ ACTION_AND_COSTS = [('do_nothing',           0),
                     ('break',               -1),
                     ('accelerate',          -1)]
            
+TIME_TO_GIVE_UP = 210 
 TAIL_GATE_DIST = LIDAR_RANGE*0.25                   
 REWARDS =           {'terminal_crash' :   -10,  #o_o_r
                      'terminal_goal'  :    10,  #safe

@@ -35,14 +35,19 @@ class StateTracker():
         #plt.imshow(new_scan, cmap=plt.cm.hot)
         #new_scan = new_scan.flatten()
         # sutract oldest scan fron state
-        self.state -= self.frame_history[self.oldest_state_idx]
+#        self.state -= self.frame_history[self.oldest_state_idx]
         
         # superimpose new_scan into state matrix
-        self.state += new_scan
+#        self.state += new_scan
         
         # replace oldest scan with new_scan
         self.frame_history[self.oldest_state_idx] = new_scan
         
+        self.state = np.zeros(self.state.shape)       
+        weight_idx = 0
+        for frame in self.frame_history:
+            self.state += frame*CONST.HISTORY_WEIGHTS[weight_idx]
+            weight_idx += 1
         # increment olderst_scan_idx
         self.oldest_state_idx = (self.oldest_state_idx - 1) % len(self.frame_history)
         for idx in self.idx_old_to_new:

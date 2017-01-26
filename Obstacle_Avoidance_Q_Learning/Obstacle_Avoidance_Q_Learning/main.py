@@ -127,7 +127,7 @@ def initSimulation(car, state):
     ########## I'M GOING WHERE THE ACTION ISSSS!!!!! ################
 score = 0               # total score of the round
 ticks  = 0              # number of iterations in each round will give up if > than...
-epochs = 10000
+epochs = 20000
 gamma = 0.9
 epsilon = 1
 leave_program = False
@@ -145,9 +145,11 @@ for i in range(epochs):
     
     initSimulation(car, state)
     pigs_fly = False
+    ticks = 0
     
     while not pigs_fly:
-        episode += 1
+        episode += 1 # for printing to screen
+        ticks += 1  
         #####  PYGAME HOUSE KEEPING  #####
         # keep loop time constant
         clock.tick(CONST.SCREEN_FPS)
@@ -195,7 +197,7 @@ for i in range(epochs):
             print('on_sholder')
          # Check for terminal states and override 
         # reward to teminal values if necessary
-        if (collisions or (car.lane_idx < 0) or (car.lane_idx > 3)):
+        if (collisions or (car.lane_idx < 0) or (car.lane_idx > 3) or (ticks > CONST.TIME_TO_GIVE_UP)):
             pigs_fly = True
             reward = CONST.REWARDS['terminal_crash']
             print('terminal_crash')
