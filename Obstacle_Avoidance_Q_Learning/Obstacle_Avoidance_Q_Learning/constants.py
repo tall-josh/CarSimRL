@@ -17,18 +17,18 @@ COLOR_YELLOW = (255,255,0)
 
 CAR_LENGTH = 44 #length in pixles
 CAR_SAFE_BUBBLE = math.ceil(2*CAR_LENGTH)
-CELLS_PER_LANE = 11
+CELLS_PER_LANE = 6
 
 #screen
 SCREEN_WIDTH = math.ceil(CELLS_PER_LANE*CAR_SAFE_BUBBLE)  #keep in multaples of car_safe_bubble so to make occupancy grid uniform
 SCREEN_HEIGHT = 400
 SCREEN_SIZE = (SCREEN_WIDTH, SCREEN_HEIGHT)
 SCREEN_PADDING = 200
-SCREEN_FPS = 5
+SCREEN_FPS = 100
 
 ONE_DEGREE = 3.14159 / 180.0
 CAR_ANGULAR_ACCEL = ONE_DEGREE * 1
-CAR_FORWARD_ACCEL = 0.3
+CAR_FORWARD_ACCEL = 1
 LANE_WIDTH = 40
 SHOLDER = LANE_WIDTH//2
 
@@ -64,8 +64,8 @@ MERGE_PROB = 0
 MAX_NO_MERGES = 4
 
 LIDAR_RANGE =  200
-LIDAR_COUNT = 50
-LIDAR_SWEEP = 220
+LIDAR_COUNT = 80
+LIDAR_SWEEP = 359
 LIDAR_RES = 5 # one pixle is approx 10cm
 LIDAR_STEP = LIDAR_SWEEP / (LIDAR_COUNT - 1)
 LIDAR_DATA_SIZE = (LIDAR_COUNT, (LIDAR_RANGE // LIDAR_RES))
@@ -89,6 +89,8 @@ FRAME_HISTORY_SIZE = (HISTORY_DEPTH, LIDAR_COUNT, (LIDAR_RANGE // LIDAR_RES))
 #                    ('medium_acceleration', -3),
 #                    ('hard_acceleration',   -5)]
 
+CAR_CONTROL_DAMPENING_DEPTH = 3
+
 ACTION_NAMES = ['do_nothing',
                 'change_left',
                 'change_right',
@@ -102,9 +104,10 @@ ACTION_AND_COSTS = [('do_nothing',           0),
                     ('break',               -1),
                     ('accelerate',          -1)]
            
-TIME_TO_GIVE_UP = 210 
-TAIL_GATE_DIST = LIDAR_RANGE*0.25                   
-REWARDS =           {'terminal_crash' :   -10,  #o_o_r
-                     'terminal_goal'  :    10,  #safe
-                     'on_sholder'     :    -5,  #unease
-                     'tail_gate'      :    -3}
+TIME_TO_GIVE_UP = 100 
+TAIL_GATE_DIST = LIDAR_RANGE*0.3                   
+REWARDS =           {'terminal_crash' :   -10,  
+                     'terminal_goal'  :     0,  
+                     'on_sholder'     :    -5,  
+                     'tail_gate'      :    -3,
+                     'too_slow'       :    -3}

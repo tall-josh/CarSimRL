@@ -18,6 +18,7 @@ import state_tracker as st
 import copy
 import deep_q_neural_network as dqnn
 import tensorflow as tf
+import static_obstacle as static_obs
 
 log_data = False
 if log_data:
@@ -82,16 +83,27 @@ def doObsMerge(merge_count):
             if obstacles.sprites()[rand_obs].performMergeRight(obstacles):
                 merge_count += 1
             
+moving_obstacles = False # should not need to touch this. Is set in init(Static)Obstacels
+def initStaticObstacles(xPos, lanes):
+    global moving_obstacles
+    moving_obstacles = False
+    for i in range(len(xPos)):
+        obs = static_obs.StaticObstacle(xPos[i], CONST.LANES[lanes[i]],
+                                art.cars['gray'])
+        all_sprites.add(obs)
+        obstacles.add(obs)
 
 def initObstacles(num_l_to_r, num_r_to_l):
+    global moving_obstacles
+    moving_obstacles = True
     for i in range(num_l_to_r):
-        obs = obstacle.Obstacle(random.randint(CONST.OBS_LN_LtoR_MIN,CONST.OBS_LN_LtoR_MAX),
+        obs = obstacle.Obstacle(random.randint(CONST.OBS_LN_LtoR_MIN, CONST.OBS_LN_LtoR_MAX),
                                 "l_to_r",
                                 art.cars['gray'],
                                 car.rect.centerx, 
                                 car.rect.centery, 
                                 other_obs = obstacles)
-        all_sprites.add(obs)
+        all_sprites.addstate(obs)
         obstacles.add(obs)
         
     for i in range(num_r_to_l):
@@ -100,24 +112,31 @@ def initObstacles(num_l_to_r, num_r_to_l):
                             art.cars['gray'],
                             car.rect.centerx, 
                             car.rect.centery, 
-                            obstacles)
+                            other_obs = obstacles)
 
         all_sprites.add(obs)
         obstacles.add(obs)
-    
 
+        
 
-def initSimulation(car, state):
+def initSimulation(car, state, filling_buffer = False):
     
-#    global obstacels
-#    global all_sprites
+    global obstacels
+    global all_sprites
     obstacles.empty()
     all_sprites.empty()
     all_sprites.add(car)
     
-    car.reInit(lane_idx=random.randint(CONST.CAR_LANE_MIN, CONST.CAR_LANE_MAX))
+    # This is a super hacky way to try and bias away from initialising the car in 'breaking' state
+    # when filling replay buffer
+    random_start = random.randint(0,len(CONST.ACTION_NAMES)-1)
+    random_start = random.randint(0,len(CONST.ACTION_NAMES)-1) if random_start == 3 else random_start
+
+    car.reInit(random.uniform(0, CONST.SCREEN_WIDTH*0.75), random.randint(1,3),
+               random_start if filling_buffer else 0)
     
-    initObstacles(CONST.OBS_L_TO_R,CONST.OBS_R_TO_L)    
+    #initObstacles(CONST.OBS_L_TO_R,CONST.OBS_R_TO_L)    
+    initStaticObstacles(xPos=[200,400,500], lanes=[2,1,3])
         
     # initial state assumes the agent 
     # has been stationary for a short period
@@ -125,14 +144,15 @@ def initSimulation(car, state):
     
     
     ########## I'M GOING WHERE THE ACTION ISSSS!!!!! ################
+
 score = 0               # total score of the round
 ticks  = 0              # number of iterations in each round will give up if > than...
-epochs = 20000
+epochs = 10000
 gamma = 0.9
 epsilon = 1
 leave_program = False
-batch_size = 50
-buffer = 100
+batch_size = 30
+buffer = 30000
 replay = []
 h = 0
 target_q = 0
@@ -143,7 +163,7 @@ epoch_cnt = 0
 episode = 0
 for i in range(epochs):
     
-    initSimulation(car, state)
+    initSimulation(car, state, True if len(replay) < buffer else False)
     pigs_fly = False
     ticks = 0
     
@@ -162,14 +182,14 @@ for i in range(epochs):
         ##### SELECT ACTION #####
         # select random action or use best action from qMatrix
         action_idx = 0
-        epsilon_rand = False
-
         if (random.random() < epsilon):
             action_idx = random.randint(0,len(CONST.ACTION_AND_COSTS)-1)
-            epsilon_rand = True
+            #print("Random action!!!")
         else:
             action_idx = np.argmax(qMatrix)
-        print("Action: ", CONST.ACTION_NAMES[action_idx], "-- --Epoch: ", epoch_cnt, "-- --Episode: ", episode)
+#        print(CONST.ACTION_NAMES[action_idx])
+#        print("speed: ", car.speed)
+        #print("Action: ", CONST.ACTION_NAMES[action_idx], "-- --Epoch: ", epoch_cnt, "-- --Episode: ", episode, '-- --Epslion: ', epsilon)
         ##### Take action #####
         #print("Action: {0}".format(CONST.ACTION_AND_COSTS[action_idx]))
         car.updateAction(action_idx)  # apply action selected above
@@ -190,27 +210,34 @@ for i in range(epochs):
         # Check for additional penalties from dangerous driving        
         if car.tail_gaiting:
             reward += CONST.REWARDS['tail_gate']
-            print('tail_gate')
+            #print('tail_gate')
         
         if car.lane_idx == 0:
             reward += CONST.REWARDS['on_sholder']
-            print('on_sholder')
+            #print('on_sholder')
+            
+        if car.speed < CONST.MIN_SPEED:
+            reward += CONST.REWARDS['too_slow']
+            #print('too_slow')
          # Check for terminal states and override 
         # reward to teminal values if necessary
         if (collisions or (car.lane_idx < 0) or (car.lane_idx > 3) or (ticks > CONST.TIME_TO_GIVE_UP)):
             pigs_fly = True
             reward = CONST.REWARDS['terminal_crash']
-            print('terminal_crash')
+            #print('terminal_crash')
         
         if car.isAtGoal():
             pigs_fly = True
             reward = CONST.REWARDS['terminal_goal']
             car.terminal = True
-            print('terminal_goal')
-        print("Reward: ", reward)
+            #print('terminal_goal')
+        #print("Reward: ", reward)
+        
         if len(replay) < buffer:
             replay.append((state_0_flat, action_idx, reward, state.state))
+            epoch_cnt =  0# keep epochs at zero until buffer if full
         else:
+            CONST.SCREEN_FPS = 20
             if h < (buffer-1):
                 h += 1
             else:
@@ -234,12 +261,13 @@ for i in range(epochs):
                 target_batch.append(target)
                 
             dqnn.fitBatch([row[0] for row in batch], target_batch)
-        if epsilon > 0.1:
-            epsilon -= 1/epochs
+        
+            if epsilon > 0.1:
+                epsilon -= 1/epochs
         
         doObsMerge(merge_count)
             
-        if epoch_cnt % 20 == 0:
+        if epoch_cnt > 0 and epoch_cnt % 20 == 0:
             print("Epochs: ", epoch_cnt)
             print("target_q: {0} = reward: {1} + gamma:{2} * (qMax: {3})".format(target_q, reward, gamma, qMax))
             print("action_idx: {0}".format(action_idx))
@@ -249,15 +277,17 @@ for i in range(epochs):
             
         ##### MORE PYGAME HOUSE KEEPING #####
     #   respawn obstacles if they are out of range
-        for obs in obstacles:            
-            if obs.out_of_range:
-                obs.reInitObs(0, CONST.LANES[random.rand(CONST.CAR_LANE_MIN,CONST.CAR_LANE_MAX)], obstacles)
-                print("Reload")
+        if moving_obstacles:
+            for obs in obstacles:            
+                if obs.out_of_range:
+                    obs.reInitObs(0, CONST.LANES[random.rand(CONST.CAR_LANE_MIN,CONST.CAR_LANE_MAX)], obstacles)
+                    #print("Reload")
+                
                 
 #       check if car is out of bounds
         if car.out_of_bounds:
             pigs_fly = True
-            print("Out_Of_bounds")
+            #print("Out_Of_bounds")
                 
     #    Draw / render
         all_sprites.draw(screen)
@@ -268,9 +298,6 @@ for i in range(epochs):
             pygame.draw.line(screen, color, (0, lane-CONST.LANE_WIDTH//2), (CONST.SCREEN_WIDTH,  lane-CONST.LANE_WIDTH//2))
             color = CONST.COLOR_WHITE
         pygame.draw.line(screen, CONST.COLOR_ORANGE, (0, CONST.LANES[len(CONST.LANES)-1] + CONST.LANE_WIDTH//2), (CONST.SCREEN_WIDTH,  CONST.LANES[len(CONST.LANES)-1] + CONST.LANE_WIDTH//2))
-
-        #draw progress marker 
-        pygame.draw.line(screen, CONST.COLOR_ORANGE, (car.goal, 0), (car.goal, CONST.SCREEN_HEIGHT))
                 
 #       Draw carrot
         pygame.draw.circle(screen, CONST.COLOR_ORANGE, (car.carrot), 5) 
@@ -291,7 +318,9 @@ for i in range(epochs):
         # After everything, flip display
         pygame.display.flip()
         ticks += 1
-        #print("ticks: {0}".format(ticks))
+        if episode % 100 == 0:
+                print("episode: {0}".format(episode))
+            
     epoch_cnt += 1    
     if leave_program: break
 

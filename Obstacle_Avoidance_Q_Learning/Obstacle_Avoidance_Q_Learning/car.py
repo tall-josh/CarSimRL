@@ -12,8 +12,9 @@ class Car(pygame.sprite.Sprite):
     method to the constructor so I can reInit the instance
     without having to create a whole new oject.
     '''
-    def reInit(self, lane_idx):
-        self.rect.center = (0, CONST.LANES[lane_idx])
+    def reInit(self, xPos, lane_idx, initial_action = 0):
+        
+        self.rect.center = (xPos, CONST.LANES[lane_idx])
         self.carrot = (self.rect.x + 50, CONST.LANES[lane_idx])
         self.at_goal = False
         self.velx = 0
@@ -21,10 +22,14 @@ class Car(pygame.sprite.Sprite):
         self.heading = 0
         self.lane_idx = lane_idx
         self.out_of_bounds = False
-        self.latest_action = 0          # Latest action updated in updateAction()
         self.sensor_data = np.zeros(CONST.LIDAR_DATA_SIZE) 
         #Q-Learning Current Reward
+
         self.reward = 0
+        self.speed = CONST.INIT_SPEED + 1
+        self.action_shift_regester = [initial_action for i in range(CONST.CAR_CONTROL_DAMPENING_DEPTH)]
+        self.shift_reg_idx = 0
+        self.current_action = initial_action
 
 
         
@@ -43,20 +48,32 @@ class Car(pygame.sprite.Sprite):
         self.goal = self.rect.center[0] + 100
         self.goal_increment = 100
         self.goal_count = 1
-        self.reInit(lane_idx)
+        self.reInit(0, lane_idx)
         self.tail_gaiting = False
+        self.action_shift_regester = []
+        self.shift_reg_idx = 0
+        self.current_action = 0
+        
         
         
     def attachLidar(self, to_attach):
         self.lidar = to_attach
         
+    def __updateShiftRegister(self, action):
+        self.action_shift_regester[self.shift_reg_idx] = action
+        self.shift_reg_idx = (self.shift_reg_idx + 1) % CONST.CAR_CONTROL_DAMPENING_DEPTH
+        if all(actions == action for actions in self.action_shift_regester):
+            self.current_action = action
+            
+            
+        
     # Updates car's controles and allocates rewards asociated
     # with the action taken. (Note: This does NOT allocate
     # rewards asociated with colisions and goals)
     def updateAction(self, action):
-        self.latest_action = action
-        action_str = CONST.ACTION_AND_COSTS[action][0]
-
+        self.__updateShiftRegister(action)
+        action_str = CONST.ACTION_AND_COSTS[self.current_action][0]
+        
         if action_str == 'do_nothing':
             pass
         elif action_str == 'change_left':
@@ -89,16 +106,16 @@ class Car(pygame.sprite.Sprite):
         self.tail_gaiting = self.lidar.tail_gating
     
     def isAtGoal(self):
-#        self.at_goal = (self.rect.x > CONST.SCREEN_WIDTH) 
-        self.at_goal = (self.rect.x > self.goal)
-        if self.at_goal: 
-            self.goal_count += 1
-            if self.goal_count % 20 == 0:
-                self.goal += self.goal_increment
-                
-        if self.goal > CONST.SCREEN_WIDTH:
-            self.goal = CONST.SCREEN_WIDTH
-            self.goal_increment = 0
+        self.at_goal = (self.rect.x > CONST.SCREEN_WIDTH) 
+#        self.at_goal = (self.rect.x > self.goal)
+#        if self.at_goal: 
+#            self.goal_count += 1
+#            if self.goal_count % 20 == 0:
+#                self.goal += self.goal_increment
+#                
+#        if self.goal > CONST.SCREEN_WIDTH:
+#            self.goal = CONST.SCREEN_WIDTH
+#            self.goal_increment = 0
 
         return self.at_goal
                 

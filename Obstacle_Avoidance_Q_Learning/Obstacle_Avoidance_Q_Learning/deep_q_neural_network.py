@@ -122,19 +122,22 @@ except:
         
 # Conv Layer 1
 filter_sz1 = 3#5
-num_filters1 = 8#16
+num_filters1 = 16#16
 
 
 # Conv Layer 2
 filter_sz2 = 5#5
-num_filters2 = 16#36
+num_filters2 = 32#36
 
 # Conv Layer 3
 filter_sz3 = 5#5
 num_filters3 = 32#36
 
 # Fully connected
-fc_size = 128#128
+fc1_size = 256#128
+
+# Fully connected
+fc2_size = 128#128
 
 ##### Data dimentions #####
 image_size = CONST.STATE_MATRIX_SIZE      
@@ -172,16 +175,30 @@ layer_conv3, weights_conv3 = new_conv_layer(prev_layer=layer_conv2,
 
 layer_flat, num_features = flatten_layer(layer_conv3)
 
-
 layer_fc1 = new_fc_layer(prev_layer = layer_flat,
                          num_inputs = num_features,
-                         num_outputs = fc_size,
+                         num_outputs = fc1_size,
                          use_relu=True)
 
-q_matrix = new_fc_layer(prev_layer=layer_fc1,
-                         num_inputs=fc_size,
+layer_fc2 = new_fc_layer(prev_layer = layer_fc1,
+                         num_inputs = fc1_size,
+                         num_outputs = fc2_size,
+                         use_relu=True)
+
+q_matrix = new_fc_layer(prev_layer=layer_fc2,
+                         num_inputs=fc2_size,
                          num_outputs=num_classes,
                          use_relu=False)
+
+#layer_fc1 = new_fc_layer(prev_layer = layer_flat,
+#                         num_inputs = num_features,
+#                         num_outputs = fc_size,
+#                         use_relu=True)
+#
+#q_matrix = new_fc_layer(prev_layer=layer_fc1,
+#                         num_inputs=fc_size,
+#                         num_outputs=num_classes,
+#                         use_relu=False)
 
 ##### CLASS PREDICTION #####
 
