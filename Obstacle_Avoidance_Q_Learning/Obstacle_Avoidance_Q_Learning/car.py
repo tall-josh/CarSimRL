@@ -66,16 +66,12 @@ class Car(pygame.sprite.Sprite):
             self.current_action = action
         else:
             self.current_action = 0
-            self.action_shift_regester = [0 for i in range(CONST.CAR_CONTROL_DAMPENING_DEPTH)]
-            self.shift_reg_idx = 0
-            
-            
             
         
     # Updates car's controles and allocates rewards asociated
     # with the action taken. (Note: This does NOT allocate
     # rewards asociated with colisions and goals)
-    def updateAction(self, action, force):
+    def updateAction(self, action, force=False):
         if force:
             self.current_action = action
         else:
