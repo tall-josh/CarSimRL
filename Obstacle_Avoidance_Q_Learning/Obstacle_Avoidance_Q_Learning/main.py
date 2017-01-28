@@ -163,7 +163,7 @@ epoch_cnt = 0
 episode = 0
 for i in range(epochs):
     
-    initSimulation(car, state, True if len(replay) < buffer else False)
+    initSimulation(car, state, filling_buffer = True if len(replay) < buffer else False)
     pigs_fly = False
     ticks = 0
     
@@ -192,7 +192,7 @@ for i in range(epochs):
         #print("Action: ", CONST.ACTION_NAMES[action_idx], "-- --Epoch: ", epoch_cnt, "-- --Episode: ", episode, '-- --Epslion: ', epsilon)
         ##### Take action #####
         #print("Action: {0}".format(CONST.ACTION_AND_COSTS[action_idx]))
-        car.updateAction(action_idx)  # apply action selected above
+        car.updateAction(action_idx, force  = True if len(replay) < buffer else False)   # apply action selected above
         all_sprites.update()          # pygame updating sprites
         collisions = pygame.sprite.spritecollide(car, obstacles, False)    # Check for agent obstacle collisions
         ##### Observe new state (s') #####
@@ -267,7 +267,7 @@ for i in range(epochs):
         
         doObsMerge(merge_count)
             
-        if epoch_cnt > 0 and epoch_cnt % 20 == 0:
+        if epoch_cnt > 0:
             print("Epochs: ", epoch_cnt)
             print("target_q: {0} = reward: {1} + gamma:{2} * (qMax: {3})".format(target_q, reward, gamma, qMax))
             print("action_idx: {0}".format(action_idx))
