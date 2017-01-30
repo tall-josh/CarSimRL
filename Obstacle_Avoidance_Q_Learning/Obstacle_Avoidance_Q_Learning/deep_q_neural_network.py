@@ -5,6 +5,7 @@ import numpy as np
 import time
 from datetime import timedelta
 import constants as CONST
+import os
 
 def new_weights(shape):
     return tf.Variable(tf.truncated_normal(shape, stddev=0.05))
@@ -207,6 +208,12 @@ reduction = tf.square(q_target - q_matrix)
 cost = tf.reduce_mean(reduction)
 optimizer = tf.train.AdamOptimizer(learning_rate=0.01).minimize(cost)
 
+saver = tf.train.Saver()
+save_dir = 'checkpoints/'
+if not os.path.exists(save_dir):
+    os.makedirs(save_dir)
+    
+save_path = os.path.join(save_dir, 'values')
 session = tf.Session()
 session.run(tf.global_variables_initializer())
 #train_batch_size=64
@@ -231,9 +238,9 @@ def fit(state_flattened, target_qs_flattened):
     q_feed[0] = target_qs_flattened
     state_action_dict = {state: state_feed, q_target: q_feed}
     session.run(optimizer, feed_dict = state_action_dict)
+
     
-    
-def fitBatch(batch_state_flattened, batch_target_qs_flattened):
+def fitBatch(batch_state_flattened, batch_target_qs_flattened, save=False, idx=None, update=None):
     state_feed = np.zeros((len(batch_state_flattened),len(batch_state_flattened[0])))
     q_feed = np.zeros((len(batch_state_flattened),len(CONST.ACTION_AND_COSTS)))
     for i in range(len(batch_state_flattened)):
@@ -242,8 +249,11 @@ def fitBatch(batch_state_flattened, batch_target_qs_flattened):
         
     state_action_dict = {state: state_feed, q_target: q_feed}  
     lossVal = session.run([optimizer, cost], feed_dict = state_action_dict)
-    print("q_feed: ", q_feed[0])
-    print("lossval: ", lossVal)
+    if not (idx==update==None):
+        print("q_feed: ", q_feed[0])
+        print("lossval: {0}, idx: {1}, update: {2}".format(lossVal, idx, update))
+    if save:
+        saver.save(sess=session, save_path=save_path)
 
 #def fit(state_flattened, target_qs):
 #    state_feed = np.zeros((1,len(state_flattened)))

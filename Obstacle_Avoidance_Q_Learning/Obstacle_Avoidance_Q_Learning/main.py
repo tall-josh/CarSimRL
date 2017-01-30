@@ -259,14 +259,18 @@ for i in range(epochs):
                 target_q = reward + (gamma*q_val_new)
                 y[0][action_idx] = target_q
                 target_batch.append(y)
-            
-            dqnn.fitBatch([row[0] for row in batch], target_batch)
+                
+            if epoch_cnt > 0 and epoch_cnt % 20 == 0:   
+                dqnn.fitBatch([row[0] for row in batch], target_batch, save=False, idx=action, update=target_q)
+                
+            if epoch_cnt > 0 and epoch_cnt % 100 == 0:   
+                dqnn.fitBatch([row[0] for row in batch], target_batch, save=True)
         
             if epsilon > 0.1:
                 epsilon -= 1/epochs
         
         doObsMerge(merge_count)
-            
+        
 #        if epoch_cnt > 0:
 #            print("Epochs: ", epoch_cnt)
 #            print("target_q: {0} = reward: {1} + gamma:{2} * (qMax: {3})".format(target_q, reward, gamma, qMax))
