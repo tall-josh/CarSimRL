@@ -134,10 +134,10 @@ filter_sz3 = 5#5
 num_filters3 = 32#36
 
 # Fully connected
-fc1_size = 256#128
+fc1_size = 128#128
 
 # Fully connected
-fc2_size = 128#128
+fc2_size = 50#128
 
 ##### Data dimentions #####
 image_size = CONST.STATE_MATRIX_SIZE      
@@ -204,8 +204,8 @@ q_matrix = new_fc_layer(prev_layer=layer_fc2,
 
 q_est_action = tf.argmax(q_matrix, dimension=1)
 reduction = tf.square(q_target - q_matrix)
-cost = tf.reduce_mean(reduction, reduction_indices=1)
-optimizer = tf.train.AdamOptimizer(learning_rate=1e-4).minimize(cost)
+cost = tf.reduce_mean(reduction)
+optimizer = tf.train.AdamOptimizer(learning_rate=0.01).minimize(cost)
 
 session = tf.Session()
 session.run(tf.global_variables_initializer())
@@ -223,7 +223,7 @@ def getQMat(state_flattened):
                  
     return session.run(q_matrix, feed_dict=feed_dict)
 
-# fit(scan.flatten(), )
+
 def fit(state_flattened, target_qs_flattened):
     state_feed = np.zeros((1,len(state_flattened)))
     state_feed[0] = state_flattened
@@ -232,15 +232,18 @@ def fit(state_flattened, target_qs_flattened):
     state_action_dict = {state: state_feed, q_target: q_feed}
     session.run(optimizer, feed_dict = state_action_dict)
     
+    
 def fitBatch(batch_state_flattened, batch_target_qs_flattened):
     state_feed = np.zeros((len(batch_state_flattened),len(batch_state_flattened[0])))
     q_feed = np.zeros((len(batch_state_flattened),len(CONST.ACTION_AND_COSTS)))
     for i in range(len(batch_state_flattened)):
         state_feed[i] = batch_state_flattened[i]
         q_feed[i] = batch_target_qs_flattened[i]
-
+        
     state_action_dict = {state: state_feed, q_target: q_feed}  
-    session.run(optimizer, feed_dict = state_action_dict)
+    lossVal = session.run([optimizer, cost], feed_dict = state_action_dict)
+    print("q_feed: ", q_feed[0])
+    print("lossval: ", lossVal)
 
 #def fit(state_flattened, target_qs):
 #    state_feed = np.zeros((1,len(state_flattened)))

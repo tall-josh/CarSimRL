@@ -60,12 +60,13 @@ class Car(pygame.sprite.Sprite):
         self.lidar = to_attach
         
     def __updateShiftRegister(self, action):
-        self.action_shift_regester[self.shift_reg_idx] = action
-        self.shift_reg_idx = (self.shift_reg_idx + 1) % CONST.CAR_CONTROL_DAMPENING_DEPTH
-        if all(actions == action for actions in self.action_shift_regester):
-            self.current_action = action
-        else:
-            self.current_action = 0
+#        self.action_shift_regester[self.shift_reg_idx] = action
+#        self.shift_reg_idx = (self.shift_reg_idx + 1) % CONST.CAR_CONTROL_DAMPENING_DEPTH
+#        if all(actions == action for actions in self.action_shift_regester):
+#            self.current_action = action
+#        else:
+#            self.current_action = 0
+        self.current_action = action
             
         
     # Updates car's controles and allocates rewards asociated

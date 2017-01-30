@@ -101,7 +101,7 @@ ACTION_NAMES = ['do_nothing',
 ACTION_AND_COSTS = [('do_nothing',           0),
                     ('change_left',         -1),
                     ('change_right',        -1),
-                    ('break',               -1),
+                    ('break',               -2),
                     ('accelerate',          -1)]
            
 TIME_TO_GIVE_UP = 100 

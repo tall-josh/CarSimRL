@@ -129,14 +129,13 @@ def initSimulation(car, state, filling_buffer = False):
     
     # This is a super hacky way to try and bias away from initialising the car in 'breaking' state
     # when filling replay buffer
-    random_start = random.randint(0,len(CONST.ACTION_NAMES)-1)
-    random_start = random.randint(0,len(CONST.ACTION_NAMES)-1) if random_start == 3 else random_start
+#    random_start = random.randint(0,len(CONST.ACTION_NAMES)-1)
+#    random_start = random.randint(0,len(CONST.ACTION_NAMES)-1) if random_start == 3 else random_start
 
-    car.reInit(random.uniform(0, CONST.SCREEN_WIDTH*0.75), random.randint(1,3),
-               random_start if filling_buffer else 0)
+    car.reInit(0, 2)
     
     #initObstacles(CONST.OBS_L_TO_R,CONST.OBS_R_TO_L)    
-    initStaticObstacles(xPos=[200,400,500], lanes=[2,1,3])
+    initStaticObstacles(xPos=[200], lanes=[1])
         
     # initial state assumes the agent 
     # has been stationary for a short period
@@ -151,8 +150,8 @@ epochs = 10000
 gamma = 0.9
 epsilon = 1
 leave_program = False
-batch_size = 30
-buffer = 30000
+batch_size = 15
+buffer = 5000
 replay = []
 h = 0
 target_q = 0
@@ -251,15 +250,16 @@ for i in range(epochs):
             for element in batch:
                 old_state, action, reward, new_state = element
                 q_mat_old = dqnn.getQMat(old_state.flatten())
-                q_val_old = np.argmax(q_mat_old)
-                
+                #q_val_old = np.argmax(q_mat_old)
+                y =  q_mat_old[:]
+
                 q_mat_new = dqnn.getQMat(new_state.flatten())
                 q_val_new = np.argmax(q_mat_new)
         
-                target_q = reward + (gamma*qMax)
-                target[0][action_idx] = target_q
-                target_batch.append(target)
-                
+                target_q = reward + (gamma*q_val_new)
+                y[0][action_idx] = target_q
+                target_batch.append(y)
+            
             dqnn.fitBatch([row[0] for row in batch], target_batch)
         
             if epsilon > 0.1:
@@ -267,12 +267,12 @@ for i in range(epochs):
         
         doObsMerge(merge_count)
             
-        if epoch_cnt > 0:
-            print("Epochs: ", epoch_cnt)
-            print("target_q: {0} = reward: {1} + gamma:{2} * (qMax: {3})".format(target_q, reward, gamma, qMax))
-            print("action_idx: {0}".format(action_idx))
-            print("Episilon: ", epsilon)
-            print("Q_mat: ", qMatrix)   
+#        if epoch_cnt > 0:
+#            print("Epochs: ", epoch_cnt)
+#            print("target_q: {0} = reward: {1} + gamma:{2} * (qMax: {3})".format(target_q, reward, gamma, qMax))
+#            print("action_idx: {0}".format(action_idx))
+#            print("Episilon: ", epsilon)
+#            print("Q_mat: ", qMatrix)   
             
             
         ##### MORE PYGAME HOUSE KEEPING #####
