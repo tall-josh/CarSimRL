@@ -131,11 +131,16 @@ def initSimulation(car, state, filling_buffer = False):
     # when filling replay buffer
 #    random_start = random.randint(0,len(CONST.ACTION_NAMES)-1)
 #    random_start = random.randint(0,len(CONST.ACTION_NAMES)-1) if random_start == 3 else random_start
-
-    car.reInit(0, 2)
+    rand_x = random.uniform(0, CONST.SCREEN_WIDTH*0.75)
+    rand_y = random.randint(1,3)
+    
+    if filling_buffer:
+        car.reInit(rand_x, rand_y)
+    else:
+        car.reInit(0, 2)
     
     #initObstacles(CONST.OBS_L_TO_R,CONST.OBS_R_TO_L)    
-    initStaticObstacles(xPos=[200], lanes=[1])
+    initStaticObstacles(xPos=[100,350,500], lanes=[1,2,3])
         
     # initial state assumes the agent 
     # has been stationary for a short period
@@ -146,12 +151,12 @@ def initSimulation(car, state, filling_buffer = False):
 
 score = 0               # total score of the round
 ticks  = 0              # number of iterations in each round will give up if > than...
-epochs = 10000
+epochs = 50000
 gamma = 0.9
 epsilon = 1
 leave_program = False
 batch_size = 15
-buffer = 5000
+buffer = 10000
 replay = []
 h = 0
 target_q = 0
@@ -262,8 +267,10 @@ for i in range(epochs):
                 
             if epoch_cnt > 0 and epoch_cnt % 20 == 0:   
                 dqnn.fitBatch([row[0] for row in batch], target_batch, save=False, idx=action, update=target_q)
+                print("epoch: {0}, epsilon: {1}".format(epoch_cnt, epsilon))
                 
-            if epoch_cnt > 0 and epoch_cnt % 100 == 0:   
+            if epoch_cnt > 0 and epoch_cnt % 100 == 0 and save:
+                save = False
                 dqnn.fitBatch([row[0] for row in batch], target_batch, save=True)
         
             if epsilon > 0.1:
@@ -322,9 +329,9 @@ for i in range(epochs):
         # After everything, flip display
         pygame.display.flip()
         ticks += 1
-        if episode % 100 == 0:
-                print("episode: {0}".format(episode))
-            
+#        if episode % 100 == 0:
+#                print("episode: {0}".format(episode))
+    save = True
     epoch_cnt += 1    
     if leave_program: break
 

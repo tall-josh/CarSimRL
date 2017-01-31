@@ -123,22 +123,21 @@ except:
         
 # Conv Layer 1
 filter_sz1 = 3#5
-num_filters1 = 16#16
-
+num_filters1 = 8#16
 
 # Conv Layer 2
 filter_sz2 = 5#5
-num_filters2 = 32#36
+num_filters2 = 16#36
 
 # Conv Layer 3
 filter_sz3 = 5#5
-num_filters3 = 32#36
+num_filters3 = 16#36
 
 # Fully connected
-fc1_size = 128#128
+fc1_size = 50#128
 
 # Fully connected
-fc2_size = 50#128
+fc2_size = 25#128
 
 ##### Data dimentions #####
 image_size = CONST.STATE_MATRIX_SIZE      
@@ -206,10 +205,10 @@ q_matrix = new_fc_layer(prev_layer=layer_fc2,
 q_est_action = tf.argmax(q_matrix, dimension=1)
 reduction = tf.square(q_target - q_matrix)
 cost = tf.reduce_mean(reduction)
-optimizer = tf.train.AdamOptimizer(learning_rate=0.01).minimize(cost)
+optimizer = tf.train.AdamOptimizer(learning_rate=0.001).minimize(cost)
 
 saver = tf.train.Saver()
-save_dir = 'checkpoints/'
+save_dir = 'checkpoints_1/'
 if not os.path.exists(save_dir):
     os.makedirs(save_dir)
     
