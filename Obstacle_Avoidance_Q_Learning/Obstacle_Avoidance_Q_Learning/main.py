@@ -138,9 +138,9 @@ def initSimulation(car, state, filling_buffer = False):
 
     valid = False
     while not valid:
-        valid = not ((rand_y == 1 and abs(rand_x - obs_x[1-1]) < CONST.CAR_SAFE_BUBBLE) or
-                     (rand_y == 2 and abs(rand_x - obs_x[2-1]) < CONST.CAR_SAFE_BUBBLE) or
-                     (rand_y == 3 and abs(rand_x - obs_x[3-1]) < CONST.CAR_SAFE_BUBBLE))
+        valid = not ((rand_y == 1 and abs(rand_x - obs_x[1-1]) < 1.5*CONST.CAR_SAFE_BUBBLE) or
+                     (rand_y == 2 and abs(rand_x - obs_x[2-1]) < 1.5*CONST.CAR_SAFE_BUBBLE) or
+                     (rand_y == 3 and abs(rand_x - obs_x[3-1]) < 1.5*CONST.CAR_SAFE_BUBBLE))
         rand_x = random.uniform(0, CONST.SCREEN_WIDTH*0.75)
         rand_y = random.randint(1,3)
         
@@ -164,8 +164,8 @@ epoch_cnt = 0
 gamma = 0.9
 epsilon = 1
 leave_program = False
-batch_size = 5
-buffer = 100
+batch_size = 20
+buffer = 5000
 replay = []
 h = 0
 reward = 0
@@ -245,7 +245,6 @@ for i in range(epochs):
             replay[h] = (state_0, action_idx, reward, copy.deepcopy(state.state))
             batch = random.sample(replay, batch_size)
             target_batch = []
-            print('->compiling batch')
             for element in batch:
                 old_state, action, reward, new_state = element
                 q_mat_old = dqnn.getQMat(old_state)
@@ -262,13 +261,11 @@ for i in range(epochs):
                     
                 target_batch.append(y)
 
-            print('- ->fitting batch')
 
             if total_frames % 100 == 0:
                 dqnn.fitBatch([row[0] for row in batch], target_batch, save=True, verbose=True)
             else:
                 dqnn.fitBatch([row[0] for row in batch], target_batch, save=False)
-            print('- - ->complete!!!')
 
             if epsilon > 0.1:
                 epsilon -= 1/epochs

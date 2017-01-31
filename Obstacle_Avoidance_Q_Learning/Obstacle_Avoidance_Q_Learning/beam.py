@@ -2,6 +2,7 @@
 import pygame
 import constants as CONST
 import math
+import numpy as np
 
 class Beam(pygame.sprite.Sprite):
       # Sprite for the player
@@ -16,7 +17,10 @@ class Beam(pygame.sprite.Sprite):
         
         for idx in sorted_idx_list:
             self.color = CONST.COLOR_BLUE
-            for step in lidar.increments:
+            
+            #adding noise to signel
+            noisy_increments = lidar.increments + np.random.normal(0,0.5, len(lidar.increments))
+            for step in noisy_increments:
                 self.x1 = anchorX + (step * math.cos(math.radians(self.beam_idx*CONST.LIDAR_STEP - anchor_deg + lidar.start_ang_deg - 90)))
                 self.y1 = anchorY + (step * math.sin(math.radians(self.beam_idx*CONST.LIDAR_STEP - anchor_deg + lidar.start_ang_deg - 90)))
                 self.dist = step

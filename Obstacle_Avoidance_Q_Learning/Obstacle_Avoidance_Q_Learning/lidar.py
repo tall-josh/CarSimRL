@@ -64,11 +64,12 @@ class Lidar(pygame.sprite.Sprite):
         #sote indexes of obstacles from nearest to furthest
         sorted_idx_list = self.sortNearestObstacles(anchorX, anchorY, obstacle_list)
         
+        
         for i in range(len(self.beams)):
             self.beams[i].update(anchorX, anchorY, anchor_deg, obstacle_list, sorted_idx_list, self) 
             
             if self.beams[i].dist < CONST.LIDAR_RANGE:
-                self.onehot[i][self.beams[i].dist // CONST.LIDAR_RES] = 1
+                self.onehot[i][int(self.beams[i].dist / CONST.LIDAR_RES)] = 1
             
             if self.beams[i].dist < self.closest_dist:                              
                 self.closest_dist = self.beams[i].dist

@@ -126,33 +126,32 @@ num_filters1 = 8#16
 
 # Conv Layer 2
 filter_sz2 = 5#5
-num_filters2 = 16#36
+num_filters2 = 10#36
 
 # Conv Layer 3
 filter_sz3 = 5#5
 num_filters3 = 16#36
 
 # Fully connected
-fc1_size = 50#128
+fc1_size = 100#128
 
 # Fully connected
 fc2_size = 25#128
 
 ##### Data dimentions #####
 image_size = CONST.STATE_MATRIX_SIZE      
-image_size_flat = CONST.STATE_MATRIX_FLAT_SZ
 num_channels = 1
 num_classes = 5
 
 # placeholders for input nodes
-state = tf.placeholder(tf.float32, shape=[None, image_size[0], image_size[1], num_channels], name = 'state')
+state_mat = tf.placeholder(tf.float32, shape=[None, image_size[0], image_size[1], num_channels], name = 'state_mat')
 
 q_matrix = tf.placeholder(tf.float32, shape=[None, num_classes], name = 'q_matrix')
 
 q_target = tf.placeholder(tf.float32, shape=[None, num_classes], name = 'q_target')
 
 
-layer_conv1, weights_conv1 = new_conv_layer(prev_layer=state,
+layer_conv1, weights_conv1 = new_conv_layer(prev_layer=state_mat,
                                                  num_input_channels = num_channels,
                                                  filter_size = filter_sz1,
                                                  num_filters=num_filters1,
@@ -162,13 +161,13 @@ layer_conv2, weights_conv2 = new_conv_layer(prev_layer=layer_conv1,
                                                  num_input_channels = num_filters1,
                                                  filter_size = filter_sz2,
                                                  num_filters=num_filters2,
-                                                 use_pooling=False)
+                                                 use_pooling=True)
 
 layer_conv3, weights_conv3 = new_conv_layer(prev_layer=layer_conv2,
                                                  num_input_channels = num_filters2,
                                                  filter_size = filter_sz3,
                                                  num_filters=num_filters3,
-                                                 use_pooling=False)
+                                                 use_pooling=True)
 
 layer_flat, num_features = flatten_layer(layer_conv3)
 
@@ -191,7 +190,7 @@ q_matrix = new_fc_layer(prev_layer=layer_fc2,
 
 reduction = tf.square(q_target - q_matrix)
 cost = tf.reduce_mean(reduction)
-optimizer = tf.train.AdamOptimizer(learning_rate=0.001).minimize(cost)
+optimizer = tf.train.AdamOptimizer(learning_rate=0.0001).minimize(cost)
 
 saver = tf.train.Saver()
 save_dir = 'checkpoints_1/'
@@ -208,7 +207,7 @@ def getQMat(state_in):
     state_feed = np.expand_dims(state_feed, axis=0)
     state_feed = np.expand_dims(state_feed, axis=3)
     
-    feed_dict = {state: state_feed}
+    feed_dict = {state_mat: state_feed}
                  
     return session.run(q_matrix, feed_dict=feed_dict)
 
@@ -219,7 +218,7 @@ def fitBatch(batch_state, batch_target, save=False, verbose=False):
     
     q_feed = copy.deepcopy(batch_target)
             
-    state_action_dict = {state: state_feed, q_target: q_feed}  
+    state_action_dict = {state_mat: state_feed, q_target: q_feed}  
     lossVal = session.run([optimizer, cost], feed_dict = state_action_dict)
     
     if verbose:
