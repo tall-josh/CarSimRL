@@ -16,50 +16,56 @@ def new_conv_layer(prev_layer,
                    num_input_channels,
                    filter_size,
                    num_filters,
-                   use_pooling=False):
+                   use_pooling=False,
+                   layer_name = "Conv_Layer"):
     # Shape of the filter-weights for the convolution.
     # This format is determined by the TensorFlow API.
     shape = [filter_size, filter_size, num_input_channels, num_filters]
-
-    # Create new weights aka. filters with the given shape.
-    weights = new_weights(shape=shape)
-
-    # Create new biases, one for each filter.
-    biases = new_biases(length=num_filters)
-
-    # Create the TensorFlow operation for convolution.
-    # Note the strides are set to 1 in all dimensions.
-    # The first and last stride must always be 1,
-    # because the first is for the image-number and
-    # the last is for the input-channel.
-    # But e.g. strides=[1, 2, 2, 1] would mean that the filter
-    # is moved 2 pixels across the x- and y-axis of the image.
-    # The padding is set to 'SAME' which means the input image
-    # is padded with zeroes so the size of the output is the same.
-    layer = tf.nn.conv2d(input=prev_layer,
-                         filter=weights,
-                         strides=[1, 1, 1, 1],
-                         padding='SAME')
-
-    # Add the biases to the results of the convolution.
-    # A bias-value is added to each filter-channel.
-    layer += biases
-
-    # Use pooling to down-sample the image resolution?
-    if use_pooling:
-        # This is 2x2 max-pooling, which means that we
-        # consider 2x2 windows and select the largest value
-        # in each window. Then we move 2 pixels to the next window.
-        layer = tf.nn.max_pool(value=layer,
-                               ksize=[1, 2, 2, 1],
-                               strides=[1, 2, 2, 1],
-                               padding='SAME')
-
-    # Rectified Linear Unit (ReLU).
-    # It calculates max(x, 0) for each input pixel x.
-    # This adds some non-linearity to the formula and allows us
-    # to learn more complicated functions.
-    layer = tf.nn.relu(layer)
+    
+    with tf.name_scope(layer_name):
+        with tf.name_scope(layer_name, "_Weights"):
+            # Create new weights aka. filters with the given shape.
+            weights = new_weights(shape=shape)
+            tf.summary.histogram((layer_name + "_w_hist"), weights)
+    
+        with tf.name_scope(layer_name, "_Biases"):
+            # Create new biases, one for each filter.
+            biases = new_biases(length=num_filters)
+    
+        # Create the TensorFlow operation for convolution.
+        # Note the strides are set to 1 in all dimensions.
+        # The first and last stride must always be 1,
+        # because the first is for the image-number and
+        # the last is for the input-channel.
+        # But e.g. strides=[1, 2, 2, 1] would mean that the filter
+        # is moved 2 pixels across the x- and y-axis of the image.
+        # The padding is set to 'SAME' which means the input image
+        # is padded with zeroes so the size of the output is the same.
+        layer = tf.nn.conv2d(input=prev_layer,
+                             filter=weights,
+                             strides=[1, 1, 1, 1],
+                             padding='SAME')
+        
+        # Add the biases to the results of the convolution.
+        # A bias-value is added to each filter-channel.
+        layer += biases
+        
+        
+        # Use pooling to down-sample the image resolution?
+        if use_pooling:
+            # This is 2x2 max-pooling, which means that we
+            # consider 2x2 windows and select the largest value
+            # in each window. Then we move 2 pixels to the next window.
+            layer = tf.nn.max_pool(value=layer,
+                                   ksize=[1, 2, 2, 1],
+                                   strides=[1, 2, 2, 1],
+                                   padding='SAME')
+    
+        # Rectified Linear Unit (ReLU).
+        # It calculates max(x, 0) for each input pixel x.
+        # This adds some non-linearity to the formula and allows us
+        # to learn more complicated functions.
+        layer = tf.nn.relu(layer)
 
     # Note that ReLU is normally executed before the pooling,
     # but since relu(max_pool(x)) == max_pool(relu(x)) we can
@@ -199,6 +205,8 @@ if not os.path.exists(save_dir):
     
 save_path = os.path.join(save_dir, 'values')
 session = tf.Session()
+merged_summ = tf.summary.merge_all()
+train_writer = tf.train.SummaryWriter("logs/", session.graph)
 session.run(tf.global_variables_initializer())
 
 def getQMat(state_in):

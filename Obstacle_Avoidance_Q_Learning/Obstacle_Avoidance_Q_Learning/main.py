@@ -165,7 +165,7 @@ gamma = 0.9
 epsilon = 1
 leave_program = False
 batch_size = 20
-buffer = 5000
+buffer = 50
 replay = []
 h = 0
 reward = 0
@@ -236,7 +236,7 @@ for i in range(epochs):
             replay.append((state_0, action_idx, reward, copy.deepcopy(state.state)))
             epoch_cnt =  0# keep epochs at zero until buffer if full
         else:
-            CONST.SCREEN_FPS = 20
+            CONST.SCREEN_FPS = 50
             if h < (buffer-1):
                 h += 1
             else:
@@ -255,9 +255,9 @@ for i in range(epochs):
                 q_val_new = np.argmax(q_mat_new)
 
                 target_q = reward + (gamma*q_val_new)
-                y[action_idx] = target_q
+                y[action] = target_q
                 if total_frames % 100 == 0:
-                    print("Y: {0}, idx: {1}, target: {2}, epsilon: {3}".format(y, action_idx, target_q, epsilon))
+                    print("Y: {0}, idx: {1}, target: {2}, epsilon: {3}".format(y, action, target_q, epsilon))
                     
                 target_batch.append(y)
 
@@ -286,7 +286,7 @@ for i in range(epochs):
 
 # Draw / render
         all_sprites.draw(screen)
-# Drawing lane markers
+### Drawing lane markers
         center_guard = CONST.LANES[3] + CONST.LANE_WIDTH//2
         color = CONST.COLOR_ORANGE
         for lane in CONST.LANES:
@@ -294,10 +294,10 @@ for i in range(epochs):
             color = CONST.COLOR_WHITE
         pygame.draw.line(screen, CONST.COLOR_ORANGE, (0, CONST.LANES[len(CONST.LANES)-1] + CONST.LANE_WIDTH//2), (CONST.SCREEN_WIDTH,  CONST.LANES[len(CONST.LANES)-1] + CONST.LANE_WIDTH//2))
 
-# Draw carrot (what the PID follows track lanes)
+## Draw carrot (what the PID follows track lanes)
         pygame.draw.circle(screen, CONST.COLOR_ORANGE, (car.carrot), 5)
-
-# Draw most recent LiD
+#
+## Draw most recent LiD
         for beam in car.lidar.beams:
             pygame.draw.line(screen, beam.color, (beam.x1, beam.y1), (car.rect.centerx, car.rect.centery))
 
