@@ -2,10 +2,9 @@
 
 import tensorflow as tf
 import numpy as np
-import time
-from datetime import timedelta
 import constants as CONST
 import os
+import copy
 
 def new_weights(shape):
     return tf.Variable(tf.truncated_normal(shape, stddev=0.05))
@@ -146,16 +145,14 @@ num_channels = 1
 num_classes = 5
 
 # placeholders for input nodes
-state = tf.placeholder(tf.float32, shape=[None, image_size_flat], name = 'state')
+state = tf.placeholder(tf.float32, shape=[None, image_size[0], image_size[1], num_channels], name = 'state')
 
-# reshape state tensor to a tensor [arbetrary_number_of_inputs, cols, rows, channels]
-x_image = tf.reshape(state, [-1, image_size[0], image_size[1], num_channels])
+q_matrix = tf.placeholder(tf.float32, shape=[None, num_classes], name = 'q_matrix')
 
-#q_matrix = tf.placeholder(tf.float32, shape=[None, num_classes], name = 'q_matrix')
 q_target = tf.placeholder(tf.float32, shape=[None, num_classes], name = 'q_target')
 
 
-layer_conv1, weights_conv1 = new_conv_layer(prev_layer=x_image,
+layer_conv1, weights_conv1 = new_conv_layer(prev_layer=state,
                                                  num_input_channels = num_channels,
                                                  filter_size = filter_sz1,
                                                  num_filters=num_filters1,
@@ -190,19 +187,8 @@ q_matrix = new_fc_layer(prev_layer=layer_fc2,
                          num_outputs=num_classes,
                          use_relu=False)
 
-#layer_fc1 = new_fc_layer(prev_layer = layer_flat,
-#                         num_inputs = num_features,
-#                         num_outputs = fc_size,
-#                         use_relu=True)
-#
-#q_matrix = new_fc_layer(prev_layer=layer_fc1,
-#                         num_inputs=fc_size,
-#                         num_outputs=num_classes,
-#                         use_relu=False)
-
 ##### CLASS PREDICTION #####
 
-q_est_action = tf.argmax(q_matrix, dimension=1)
 reduction = tf.square(q_target - q_matrix)
 cost = tf.reduce_mean(reduction)
 optimizer = tf.train.AdamOptimizer(learning_rate=0.001).minimize(cost)
@@ -215,77 +201,29 @@ if not os.path.exists(save_dir):
 save_path = os.path.join(save_dir, 'values')
 session = tf.Session()
 session.run(tf.global_variables_initializer())
-#train_batch_size=64
 
-# Counter for total number of iterations performed so far.
-total_iterations = 0
-
-def getQMat(state_flattened):
+def getQMat(state_in):
+    #copy and make correct shape for feed_dict
+    state_feed = copy.deepcopy(state_in)
+    state_feed = np.expand_dims(state_feed, axis=0)
+    state_feed = np.expand_dims(state_feed, axis=3)
     
-    state_feed = np.zeros((1,len(state_flattened)))
-    state_feed[0] = state_flattened
-    #q_feed = np.zeros((1,len(CONST.ACTION_AND_COSTS)))
     feed_dict = {state: state_feed}
                  
     return session.run(q_matrix, feed_dict=feed_dict)
 
-
-def fit(state_flattened, target_qs_flattened):
-    state_feed = np.zeros((1,len(state_flattened)))
-    state_feed[0] = state_flattened
-    q_feed = np.zeros((1,len(CONST.ACTION_AND_COSTS)))
-    q_feed[0] = target_qs_flattened
-    state_action_dict = {state: state_feed, q_target: q_feed}
-    session.run(optimizer, feed_dict = state_action_dict)
-
     
-def fitBatch(batch_state_flattened, batch_target_qs_flattened, save=False, idx=None, update=None):
-    state_feed = np.zeros((len(batch_state_flattened),len(batch_state_flattened[0])))
-    q_feed = np.zeros((len(batch_state_flattened),len(CONST.ACTION_AND_COSTS)))
-    for i in range(len(batch_state_flattened)):
-        state_feed[i] = batch_state_flattened[i]
-        q_feed[i] = batch_target_qs_flattened[i]
-        
+def fitBatch(batch_state, batch_target, save=False, verbose=False):
+    state_feed = copy.deepcopy(batch_state)
+    state_feed = np.expand_dims(state_feed, axis=3)
+    
+    q_feed = copy.deepcopy(batch_target)
+            
     state_action_dict = {state: state_feed, q_target: q_feed}  
     lossVal = session.run([optimizer, cost], feed_dict = state_action_dict)
-    if not (idx==update==None):
-        print("q_feed: ", q_feed[0])
-        print("lossval: {0}, idx: {1}, update: {2}".format(lossVal, idx, update))
+    
+    if verbose:
+        print("LOSS_VAL: {0}: ".format(lossVal))
     if save:
         saver.save(sess=session, save_path=save_path)
-
-#def fit(state_flattened, target_qs):
-#    state_feed = np.zeros((1,len(state_flattened)))
-#    state_feed[0] = state_flattened
-#    q_feed = np.zeros((1,len(CONST.ACTION_AND_COSTS)))
-#    print("state_feed: ",state_feed.shape)
-#    print("q_target: ",q_target.get_shape())
-#    state_action_dict = {state: state_feed, q_target: q_feed}
-#    session.run(optimizer, feed_dict = state_action_dict)
-    
-def experienceReplay(num_iterations, experience_dict):
-    # Ensure we update the global variable rather than a local copy.
-    global total_iterations
-
-    # Start-time used for printing time-usage below.
-    start_time = time.time()
-
-    for i in range(num_iterations):
-
-        # Run the optimizer using this batch of training data.
-        # TensorFlow assigns the variables in feed_dict_train
-        # to the placeholder variables and then runs the optimizer.
-        session.run(optimizer, feed_dict=experience_dict)
-
-    # Update the total number of iterations performed.
-    total_iterations += num_iterations
-
-    # Ending time.
-    end_time = time.time()
-
-    # Difference between start and end-times.
-    time_dif = end_time - start_time
-
-    # Print the time-usage.
-    print("Time usage: " + str(timedelta(seconds=int(round(time_dif)))))
     
