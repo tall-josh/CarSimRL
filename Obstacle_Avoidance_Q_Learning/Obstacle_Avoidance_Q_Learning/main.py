@@ -159,12 +159,12 @@ def initSimulation(car, state, filling_buffer = False):
 
     ########## I'M GOING WHERE THE ACTION ISSSS!!!!! ################
 total_frames = 0
-epochs = 50000
+epochs = 100
 epoch_cnt = 0
 gamma = 0.9
 epsilon = 1
 leave_program = False
-batch_size = 20
+batch_size = 2
 buffer = 50
 replay = []
 h = 0
@@ -256,14 +256,14 @@ for i in range(epochs):
 
                 target_q = reward + (gamma*q_val_new)
                 y[action] = target_q
-                if total_frames % 100 == 0:
-                    print("Y: {0}, idx: {1}, target: {2}, epsilon: {3}".format(y, action, target_q, epsilon))
+#                if total_frames % 100 == 0:
+#                    print("Y: {0}, idx: {1}, target: {2}, epsilon: {3}".format(y, action, target_q, epsilon))
                     
                 target_batch.append(y)
 
 
-            if total_frames % 100 == 0:
-                dqnn.fitBatch([row[0] for row in batch], target_batch, save=True, verbose=True)
+            if total_frames % 10 == 0:
+                dqnn.fitBatch([row[0] for row in batch], target_batch, save=True, verbose=True, iteration_count=total_frames-buffer)
             else:
                 dqnn.fitBatch([row[0] for row in batch], target_batch, save=False)
 

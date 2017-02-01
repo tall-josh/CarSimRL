@@ -7,10 +7,10 @@ import os
 import copy
 
 def new_weights(shape):
-    return tf.Variable(tf.truncated_normal(shape, stddev=0.05))
+    return tf.Variable(tf.truncated_normal(shape, stddev=0.05), name = "W")
     
 def new_biases(length):
-    return tf.Variable(tf.constant(0.05, shape=[length]))
+    return tf.Variable(tf.constant(0.05, shape=[length]), name = "B")
     
 def new_conv_layer(prev_layer, 
                    num_input_channels,
@@ -26,7 +26,7 @@ def new_conv_layer(prev_layer,
         with tf.name_scope(layer_name, "_Weights"):
             # Create new weights aka. filters with the given shape.
             weights = new_weights(shape=shape)
-            tf.summary.histogram((layer_name + "_w_hist"), weights)
+            
     
         with tf.name_scope(layer_name, "_Biases"):
             # Create new biases, one for each filter.
@@ -102,24 +102,31 @@ def flatten_layer(layer):
 def new_fc_layer(prev_layer,          # The previous layer.
                  num_inputs,     # Num. inputs from prev. layer.
                  num_outputs,    # Num. outputs.
-                 use_relu=True): # Use Rectified Linear Unit (ReLU)?
-
-    # Create new weights and biases.
-    weights = new_weights(shape=[num_inputs, num_outputs])
-    biases = new_biases(length=num_outputs)
-
-    # Calculate the layer as the matrix multiplication of
-    # the input and weights, and then add the bias-values.
-    layer = tf.matmul(prev_layer, weights) + biases
-
-    # Use ReLU?
-    if use_relu:
-        layer = tf.nn.relu(layer)
+                 use_relu=True,
+                 layer_name="FC_Layer"): # Use Rectified Linear Unit (ReLU)?
+    with tf.name_scope(layer_name): 
+        with tf.name_scope(layer_name+ "/weights"):
+            # Create new weights and biases.
+            weights = new_weights(shape=[num_inputs, num_outputs])
+            tf.summary.histogram(layer_name+"_weights", weights)
         
+        with tf.name_scope(layer_name+ "/biases"):
+            biases = new_biases(length=num_outputs)
+            tf.summary.histogram(layer_name+"_biases", biases)
+        
+        with tf.name_scope(layer_name+ "/output"):
+            # Calculate the layer as the matrix multiplication of
+            # the input and weights, and then add the bias-values.
+            layer = tf.matmul(prev_layer, weights) + biases
+            
+            # Use ReLU?
+            if use_relu:
+                layer = tf.nn.relu(layer)
+            
+            tf.summary.histogram(layer_name+"_output", layer)
+            
     return layer
 
-        
-        ##### CNN Layout ##### 
         
 try: 
     tf.reset_default_graph()      
@@ -128,21 +135,21 @@ except:
         
 # Conv Layer 1
 filter_sz1 = 3#5
-num_filters1 = 8#16
+num_filters1 = 2#16
 
 # Conv Layer 2
 filter_sz2 = 5#5
-num_filters2 = 10#36
+num_filters2 = 3#36
 
 # Conv Layer 3
 filter_sz3 = 5#5
-num_filters3 = 16#36
+num_filters3 = 4#36
 
 # Fully connected
-fc1_size = 100#128
+fc1_size = 20#128
 
 # Fully connected
-fc2_size = 25#128
+fc2_size = 15#128
 
 ##### Data dimentions #####
 image_size = CONST.STATE_MATRIX_SIZE      
@@ -156,47 +163,52 @@ q_matrix = tf.placeholder(tf.float32, shape=[None, num_classes], name = 'q_matri
 
 q_target = tf.placeholder(tf.float32, shape=[None, num_classes], name = 'q_target')
 
+with tf.name_scope("CONV_1"):
+    layer_conv1, weights_conv1 = new_conv_layer(prev_layer=state_mat,
+                                                     num_input_channels = num_channels,
+                                                     filter_size = filter_sz1,
+                                                     num_filters=num_filters1,
+                                                     use_pooling=False)
+with tf.name_scope("CONV_2"):
+    layer_conv2, weights_conv2 = new_conv_layer(prev_layer=layer_conv1,
+                                                     num_input_channels = num_filters1,
+                                                     filter_size = filter_sz2,
+                                                     num_filters=num_filters2,
+                                                     use_pooling=True)
+with tf.name_scope("CONV_3"):    
+    layer_conv3, weights_conv3 = new_conv_layer(prev_layer=layer_conv2,
+                                                     num_input_channels = num_filters2,
+                                                     filter_size = filter_sz3,
+                                                     num_filters=num_filters3,
+                                                     use_pooling=True)
+with tf.name_scope("Flatten"):    
+    layer_flat, num_features = flatten_layer(layer_conv3)
 
-layer_conv1, weights_conv1 = new_conv_layer(prev_layer=state_mat,
-                                                 num_input_channels = num_channels,
-                                                 filter_size = filter_sz1,
-                                                 num_filters=num_filters1,
-                                                 use_pooling=False)
-
-layer_conv2, weights_conv2 = new_conv_layer(prev_layer=layer_conv1,
-                                                 num_input_channels = num_filters1,
-                                                 filter_size = filter_sz2,
-                                                 num_filters=num_filters2,
-                                                 use_pooling=True)
-
-layer_conv3, weights_conv3 = new_conv_layer(prev_layer=layer_conv2,
-                                                 num_input_channels = num_filters2,
-                                                 filter_size = filter_sz3,
-                                                 num_filters=num_filters3,
-                                                 use_pooling=True)
-
-layer_flat, num_features = flatten_layer(layer_conv3)
-
+   
 layer_fc1 = new_fc_layer(prev_layer = layer_flat,
                          num_inputs = num_features,
                          num_outputs = fc1_size,
-                         use_relu=True)
+                         use_relu=True,
+                         layer_name = "FC_1")
 
 layer_fc2 = new_fc_layer(prev_layer = layer_fc1,
                          num_inputs = fc1_size,
                          num_outputs = fc2_size,
-                         use_relu=True)
+                         use_relu=True,
+                         layer_name = "FC_2")
 
 q_matrix = new_fc_layer(prev_layer=layer_fc2,
                          num_inputs=fc2_size,
                          num_outputs=num_classes,
-                         use_relu=False)
+                         use_relu=False,
+                         layer_name = "FC_3")
 
 ##### CLASS PREDICTION #####
-
-reduction = tf.square(q_target - q_matrix)
-cost = tf.reduce_mean(reduction)
-optimizer = tf.train.AdamOptimizer(learning_rate=0.0001).minimize(cost)
+with tf.name_scope("cost"):
+    reduction = tf.square(q_target - q_matrix)
+    cost = tf.reduce_mean(reduction)
+    optimizer = tf.train.AdamOptimizer(learning_rate=0.0001).minimize(cost)
+    tf.summary.scalar("cost", cost)
 
 saver = tf.train.Saver()
 save_dir = 'checkpoints_1/'
@@ -205,8 +217,9 @@ if not os.path.exists(save_dir):
     
 save_path = os.path.join(save_dir, 'values')
 session = tf.Session()
+
 merged_summ = tf.summary.merge_all()
-train_writer = tf.train.SummaryWriter("logs/", session.graph)
+writer = tf.summary.FileWriter("logs2/", session.graph)
 session.run(tf.global_variables_initializer())
 
 def getQMat(state_in):
@@ -220,17 +233,22 @@ def getQMat(state_in):
     return session.run(q_matrix, feed_dict=feed_dict)
 
     
-def fitBatch(batch_state, batch_target, save=False, verbose=False):
+def fitBatch(batch_state, batch_target, save=False, verbose=False, iteration_count=0):
+    global merged_summ
     state_feed = copy.deepcopy(batch_state)
     state_feed = np.expand_dims(state_feed, axis=3)
     
     q_feed = copy.deepcopy(batch_target)
             
     state_action_dict = {state_mat: state_feed, q_target: q_feed}  
-    lossVal = session.run([optimizer, cost], feed_dict = state_action_dict)
     
     if verbose:
-        print("LOSS_VAL: {0}: ".format(lossVal))
+        session.run(optimizer, feed_dict = state_action_dict)
+        result = session.run(merged_summ, feed_dict = state_action_dict)
+        writer.add_summary(result, iteration_count)
+    else: 
+        session.run(optimizer, feed_dict = state_action_dict)
+        
     if save:
         saver.save(sess=session, save_path=save_path)
     
