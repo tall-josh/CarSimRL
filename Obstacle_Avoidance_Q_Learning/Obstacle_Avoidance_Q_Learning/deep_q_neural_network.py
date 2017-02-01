@@ -65,7 +65,7 @@ def new_conv_layer(prev_layer,
         # It calculates max(x, 0) for each input pixel x.
         # This adds some non-linearity to the formula and allows us
         # to learn more complicated functions.
-        layer = tf.nn.relu(layer)
+        layer = tf.nn.sigmoid(layer)
 
     # Note that ReLU is normally executed before the pooling,
     # but since relu(max_pool(x)) == max_pool(relu(x)) we can
@@ -121,7 +121,7 @@ def new_fc_layer(prev_layer,          # The previous layer.
             
             # Use ReLU?
             if use_relu:
-                layer = tf.nn.relu(layer)
+                layer = tf.nn.sigmoid(layer)
             
             tf.summary.histogram(layer_name+"_output", layer)
             
@@ -243,7 +243,8 @@ def fitBatch(batch_state, batch_target, save=False, verbose=False, iteration_cou
     state_action_dict = {state_mat: state_feed, q_target: q_feed}  
     
     if verbose:
-        session.run(optimizer, feed_dict = state_action_dict)
+        loss = session.run([cost, optimizer], feed_dict = state_action_dict)
+        print("Loss: {0}".format(loss))
         result = session.run(merged_summ, feed_dict = state_action_dict)
         writer.add_summary(result, iteration_count)
     else: 

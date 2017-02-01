@@ -159,12 +159,12 @@ def initSimulation(car, state, filling_buffer = False):
 
     ########## I'M GOING WHERE THE ACTION ISSSS!!!!! ################
 total_frames = 0
-epochs = 100
+epochs = 1000
 epoch_cnt = 0
 gamma = 0.9
 epsilon = 1
 leave_program = False
-batch_size = 2
+batch_size = 5
 buffer = 50
 replay = []
 h = 0
@@ -246,18 +246,17 @@ for i in range(epochs):
             batch = random.sample(replay, batch_size)
             target_batch = []
             for element in batch:
-                old_state, action, reward, new_state = element
-                q_mat_old = dqnn.getQMat(old_state)
+                replay_old_state, replay_action_idx, replay_reward, replay_new_state = element
+                q_mat_old = dqnn.getQMat(replay_old_state)
 
                 y =  copy.deepcopy(q_mat_old[0])
 
-                q_mat_new = dqnn.getQMat(new_state)
-                q_val_new = np.argmax(q_mat_new)
-
-                target_q = reward + (gamma*q_val_new)
-                y[action] = target_q
-#                if total_frames % 100 == 0:
-#                    print("Y: {0}, idx: {1}, target: {2}, epsilon: {3}".format(y, action, target_q, epsilon))
+                q_mat_new = dqnn.getQMat(replay_new_state)[0]
+                q_val_new = max(q_mat_new)
+                q_update = replay_reward + (gamma*q_val_new)
+                y[replay_action_idx] = q_update
+                if total_frames % 10 == 0:
+                    print("Y: {0}, idx: {1}, target: {2} (ori: {3}), epsilon: {4}".format(y, replay_action_idx, q_update, q_val_new, epsilon))
                     
                 target_batch.append(y)
 
