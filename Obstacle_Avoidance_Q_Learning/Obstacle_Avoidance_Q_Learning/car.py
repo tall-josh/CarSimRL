@@ -146,7 +146,6 @@ class Car(pygame.sprite.Sprite):
        self.rect.y -= self.vely
        
        self.carrot = (self.rect.x + self.carrot_dist, CONST.DRIVING_LANES[self.lane_idx])
-       print("DRIVING_LANE: ", CONST.DRIVING_LANES[self.lane_idx])
        
        self.isOutOfBounds()
        #print("Heading", self.heading)

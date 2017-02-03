@@ -43,6 +43,11 @@ LANES = [(__offset + 0*LANE_WIDTH),
          (__offset + 7*LANE_WIDTH)]
 OBSTICALE_LANES = LANES[1:len(LANES)-1]
 
+__increment = 10
+__overshoot = 50*__increment
+__no_of_increments = int((((LANES[len(LANES)-1] + __overshoot) - (LANES[0] - __overshoot)) / __increment) + 1)
+DRIVING_LANES = [LANES[0]-__overshoot+(__increment*i) for i in range(__no_of_increments)]
+
 CAR_LANE_MIN = 1 #the car can drive on the sholder, but it cannot be initalized there
 CAR_LANE_MAX = 3
 OBS_LN_LtoR_MIN = CAR_LANE_MIN
@@ -64,14 +69,14 @@ MERGE_PROB = 0
 MAX_NO_MERGES = 4
 
 LIDAR_RANGE =  200
-LIDAR_COUNT = 80
+LIDAR_COUNT = 20
 LIDAR_SWEEP = 359
-LIDAR_RES = 5 # one pixle is approx 10cm
+LIDAR_RES = 3 # one pixle is approx 10cm
 LIDAR_STEP = LIDAR_SWEEP / (LIDAR_COUNT - 1)
 LIDAR_DATA_SIZE = (LIDAR_COUNT, (LIDAR_RANGE // LIDAR_RES))
 STATE_MATRIX_SIZE = LIDAR_DATA_SIZE
 STATE_MATRIX_FLAT_SZ = STATE_MATRIX_SIZE[0]*STATE_MATRIX_SIZE[1]
-HISTORY_WEIGHTS = [1,2,4,8] #oldest to newest
+HISTORY_WEIGHTS = [0.125, 0.25, 0.5, 1] #oldest to newest
 HISTORY_DEPTH = 4
 FRAME_HISTORY_SIZE = (HISTORY_DEPTH, LIDAR_COUNT, (LIDAR_RANGE // LIDAR_RES))
 #
@@ -101,13 +106,12 @@ ACTION_NAMES = ['do_nothing',
 ACTION_AND_COSTS = [('do_nothing',           0),
                     ('change_left',         -1),
                     ('change_right',        -1),
-                    ('break',               -2),
+                    ('break',               -1),
                     ('accelerate',          -1)]
            
-TIME_TO_GIVE_UP = 100 
 TAIL_GATE_DIST = LIDAR_RANGE*0.3                   
-REWARDS =           {'terminal_crash' :   -10,  
-                     'terminal_goal'  :     0,  
+REWARDS =           {'terminal_crash' :    -10,  
+                     'terminal_goal'  :     10,  
                      'on_sholder'     :    -5,  
-                     'tail_gate'      :    -3,
-                     'too_slow'       :    -3}
+                     'tail_gate'      :    -5,
+                     'too_slow'       :    -5}
