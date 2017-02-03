@@ -26,11 +26,13 @@ def new_conv_layer(prev_layer,
         with tf.name_scope(layer_name, "_Weights"):
             # Create new weights aka. filters with the given shape.
             weights = new_weights(shape=shape)
+            tf.summary.histogram(layer_name+"_weights", weights)
             
     
         with tf.name_scope(layer_name, "_Biases"):
             # Create new biases, one for each filter.
             biases = new_biases(length=num_filters)
+            tf.summary.histogram(layer_name+"_biases", biases)
     
         # Create the TensorFlow operation for convolution.
         # Note the strides are set to 1 in all dimensions.
@@ -65,7 +67,7 @@ def new_conv_layer(prev_layer,
         # It calculates max(x, 0) for each input pixel x.
         # This adds some non-linearity to the formula and allows us
         # to learn more complicated functions.
-        layer = tf.nn.sigmoid(layer)
+        layer = tf.nn.relu(layer)
 
     # Note that ReLU is normally executed before the pooling,
     # but since relu(max_pool(x)) == max_pool(relu(x)) we can
@@ -120,8 +122,10 @@ def new_fc_layer(prev_layer,          # The previous layer.
             layer = tf.matmul(prev_layer, weights) + biases
             
             # Use ReLU?
-            if use_relu:
-                layer = tf.nn.sigmoid(layer)
+#            if use_relu:
+#                layer = tf.nn.relu(layer)
+            layer = tf.nn.sigmoid(layer)
+            
             
             tf.summary.histogram(layer_name+"_output", layer)
             
@@ -135,21 +139,21 @@ except:
         
 # Conv Layer 1
 filter_sz1 = 3#5
-num_filters1 = 2#16
+num_filters1 = 5#16
 
 # Conv Layer 2
 filter_sz2 = 5#5
-num_filters2 = 3#36
+num_filters2 = 10#36
 
 # Conv Layer 3
 filter_sz3 = 5#5
-num_filters3 = 4#36
+num_filters3 = 15#36
 
 # Fully connected
-fc1_size = 20#128
+fc1_size = 100#128
 
 # Fully connected
-fc2_size = 15#128
+fc2_size = 50#128
 
 ##### Data dimentions #####
 image_size = CONST.STATE_MATRIX_SIZE      
@@ -211,7 +215,7 @@ with tf.name_scope("cost"):
     tf.summary.scalar("cost", cost)
 
 saver = tf.train.Saver()
-save_dir = 'checkpoints_1/'
+save_dir = 'delete_me/'
 if not os.path.exists(save_dir):
     os.makedirs(save_dir)
     
@@ -219,7 +223,7 @@ save_path = os.path.join(save_dir, 'values')
 session = tf.Session()
 
 merged_summ = tf.summary.merge_all()
-writer = tf.summary.FileWriter("logs2/", session.graph)
+writer = tf.summary.FileWriter("delete_me/", session.graph)
 session.run(tf.global_variables_initializer())
 
 def getQMat(state_in):
@@ -244,12 +248,15 @@ def fitBatch(batch_state, batch_target, save=False, verbose=False, iteration_cou
     
     if verbose:
         loss = session.run([cost, optimizer], feed_dict = state_action_dict)
-        print("Loss: {0}".format(loss))
+        print("Loss: {0}, iteration: {1}".format(loss, iteration_count))
+#       print("State_Feed: ", state_feed)
+#        print("Q_feed: ", q_feed)
         result = session.run(merged_summ, feed_dict = state_action_dict)
         writer.add_summary(result, iteration_count)
     else: 
         session.run(optimizer, feed_dict = state_action_dict)
         
     if save:
+        print("Saving. iteration: ", iteration_count)
         saver.save(sess=session, save_path=save_path)
     

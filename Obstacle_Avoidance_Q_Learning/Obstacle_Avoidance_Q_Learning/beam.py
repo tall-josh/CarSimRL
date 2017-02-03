@@ -42,6 +42,8 @@ class Beam(pygame.sprite.Sprite):
                 elif self.y1 < CONST.LANES[0] - (CONST.LANE_WIDTH//2):
                     self.dist = step    
                     return
+            # if no object is struck by beam
+            self.dist = CONST.LIDAR_RANGE + 1
         
                    
                     

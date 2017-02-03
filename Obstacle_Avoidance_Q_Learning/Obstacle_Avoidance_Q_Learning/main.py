@@ -159,12 +159,12 @@ def initSimulation(car, state, filling_buffer = False):
 
     ########## I'M GOING WHERE THE ACTION ISSSS!!!!! ################
 total_frames = 0
-epochs = 1000
+epochs = 50000
 epoch_cnt = 0
 gamma = 0.9
 epsilon = 1
 leave_program = False
-batch_size = 5
+batch_size = 30
 buffer = 50
 replay = []
 h = 0
@@ -196,7 +196,8 @@ for i in range(epochs):
             action_idx = np.argmax(qMatrix)
 
 ##### Take action #####
-        car.updateAction(action_idx, force  = True if len(replay) < buffer else False)   # apply action selected above
+#        car.updateAction(2)   # apply action selected above
+        car.updateAction(action_idx)   # apply action selected above
         all_sprites.update()                                               # Pygame updating sprites
         collisions = pygame.sprite.spritecollide(car, obstacles, False)    # Check for agent obstacle collisions
 
@@ -208,29 +209,30 @@ for i in range(epochs):
         next_qMatrix = dqnn.getQMat(state.state)
 
         reward = car.reward
-# Check for additional penalties from dangerous driving
-        if car.tail_gaiting:
-            reward += CONST.REWARDS['tail_gate']
-
-        if car.lane_idx == 0:
-            reward += CONST.REWARDS['on_sholder']
-
-        if car.speed < CONST.MIN_SPEED:
-            reward += CONST.REWARDS['too_slow']
-
 # Check for terminal states and override
 # Reward to teminal values if necessary
-        if (collisions or (car.lane_idx < 0) or (car.lane_idx > 3) or (frames_this_epoch > CONST.TIME_TO_GIVE_UP)):
+#        if car.tail_gaiting:
+#            reward = CONST.REWARDS['tail_gate']
+#            pigs_fly = True
+
+#        if car.lane_idx == 0:
+#            reward = CONST.REWARDS['on_sholder']
+#            pigs_fly = True
+            
+#        if car.speed < CONST.MIN_SPEED:
+#            reward = CONST.REWARDS['too_slow']
+#            pigs_fly = True
+
+        if (collisions or car.out_of_bounds):
             pigs_fly = True
             reward = CONST.REWARDS['terminal_crash']
-            #print('terminal_crash')
+            
 
         if car.isAtGoal():
             pigs_fly = True
             reward = CONST.REWARDS['terminal_goal']
             car.terminal = True
-            #print('terminal_goal')
-        #print("Reward: ", reward)
+        
 
         if len(replay) < buffer:
             replay.append((state_0, action_idx, reward, copy.deepcopy(state.state)))
@@ -243,6 +245,7 @@ for i in range(epochs):
                 h = 0
 
             replay[h] = (state_0, action_idx, reward, copy.deepcopy(state.state))
+            print("action: {0}, reward: {1}, ".format(action_idx, reward))
             batch = random.sample(replay, batch_size)
             target_batch = []
             for element in batch:
@@ -253,16 +256,24 @@ for i in range(epochs):
 
                 q_mat_new = dqnn.getQMat(replay_new_state)[0]
                 q_val_new = max(q_mat_new)
-                q_update = replay_reward + (gamma*q_val_new)
+                if (replay_reward == -10 or 
+                    replay_reward == -5 or
+                    replay_reward == 10):
+                    q_update = replay_reward
+                else:
+                    q_update = replay_reward + (gamma*q_val_new)
                 y[replay_action_idx] = q_update
-                if total_frames % 10 == 0:
+                if total_frames % 100 == 0:
                     print("Y: {0}, idx: {1}, target: {2} (ori: {3}), epsilon: {4}".format(y, replay_action_idx, q_update, q_val_new, epsilon))
+                    print("epoch_cnt: ", epoch_cnt)
                     
                 target_batch.append(y)
 
 
-            if total_frames % 10 == 0:
-                dqnn.fitBatch([row[0] for row in batch], target_batch, save=True, verbose=True, iteration_count=total_frames-buffer)
+            if total_frames % 100 == 0:
+                dqnn.fitBatch([row[0] for row in batch], target_batch, save=False, verbose=True, iteration_count=total_frames-buffer)
+            elif total_frames % 1001 == 0:
+                dqnn.fitBatch([row[0] for row in batch], target_batch, save=True, verbose=False, iteration_count=total_frames-buffer)
             else:
                 dqnn.fitBatch([row[0] for row in batch], target_batch, save=False)
 
@@ -272,15 +283,15 @@ for i in range(epochs):
 #        doObsMerge(merge_count)
 
 ##### MORE PYGAME HOUSE KEEPING #####
-# Respawn obstacles if they are out of range
+# Respawn obstacles if they are - CONST. out of range
         if moving_obstacles:
             for obs in obstacles:
                 if obs.out_of_range:
                     obs.reInitObs(0, CONST.LANES[random.rand(CONST.CAR_LANE_MIN,CONST.CAR_LANE_MAX)], obstacles)
                     #print("Reload")
-
+            
 # Check if car is out of bounds
-        if car.out_of_bounds:
+        if car.rect.x > CONST.SCREEN_WIDTH + CONST.SCREEN_PADDING:
             pigs_fly = True
 
 # Draw / render
@@ -295,6 +306,7 @@ for i in range(epochs):
 
 ## Draw carrot (what the PID follows track lanes)
         pygame.draw.circle(screen, CONST.COLOR_ORANGE, (car.carrot), 5)
+        pygame.draw.circle(screen, CONST.COLOR_ORANGE, (300, int(CONST.LANES[3] + CONST.LANE_WIDTH//2)), 4)
 #
 ## Draw most recent LiD
         for beam in car.lidar.beams:
@@ -311,14 +323,15 @@ for i in range(epochs):
 
         frames_this_epoch += 1
         total_frames += 1
-        if total_frames % 10 == 0:
+        if total_frames % 100 == 0:
             print("total_frames: ", total_frames)
 # After everything, flip display
         pygame.display.flip()
 
 
 
-
+    epoch_cnt += 1
+    if epoch_cnt == epochs-1: epoch_cnt = epochs - 2 
     if leave_program: break
 
 dqnn.session.close()

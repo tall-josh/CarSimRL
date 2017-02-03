@@ -20,12 +20,14 @@ class Car(pygame.sprite.Sprite):
         self.velx = 0
         self.vely = 0
         self.heading = 0
-        self.lane_idx = lane_idx
+        for lane in range(len(CONST.DRIVING_LANES)): 
+            if CONST.DRIVING_LANES[lane] >= CONST.LANES[lane_idx]: 
+                self.lane_idx = lane
+                break
         self.out_of_bounds = False
         self.sensor_data = np.zeros(CONST.LIDAR_DATA_SIZE) 
         #Q-Learning Current Reward
 
-        self.reward = 0
         self.speed = CONST.INIT_SPEED + 1
         self.action_shift_regester = [initial_action for i in range(CONST.CAR_CONTROL_DAMPENING_DEPTH)]
         self.shift_reg_idx = 0
@@ -49,35 +51,21 @@ class Car(pygame.sprite.Sprite):
         self.goal_increment = 100
         self.goal_count = 1
         self.reInit(0, lane_idx)
-        self.tail_gaiting = False
-        self.action_shift_regester = []
-        self.shift_reg_idx = 0
-        self.current_action = 0
+#        self.tail_gaiting = False
         
         
         
     def attachLidar(self, to_attach):
         self.lidar = to_attach
-        
-    def __updateShiftRegister(self, action):
-#        self.action_shift_regester[self.shift_reg_idx] = action
-#        self.shift_reg_idx = (self.shift_reg_idx + 1) % CONST.CAR_CONTROL_DAMPENING_DEPTH
-#        if all(actions == action for actions in self.action_shift_regester):
-#            self.current_action = action
-#        else:
-#            self.current_action = 0
-        self.current_action = action
-            
+             
         
     # Updates car's controles and allocates rewards asociated
     # with the action taken. (Note: This does NOT allocate
     # rewards asociated with colisions and goals)
-    def updateAction(self, action, force=False):
-        if force:
-            self.current_action = action
-        else:
-            self.__updateShiftRegister(action)
-            
+    def updateAction(self, action):
+    
+        self.current_action = action
+        
         action_str = CONST.ACTION_AND_COSTS[self.current_action][0]
         
         if action_str == 'do_nothing':
@@ -91,6 +79,8 @@ class Car(pygame.sprite.Sprite):
         elif action_str == 'accelerate':
             self.speed += CONST.CAR_FORWARD_ACCEL
     
+        if self.lane_idx < 0: self.lane_idx = 0
+        if self.lane_idx > len(CONST.DRIVING_LANES)-1: self.lane_idx = len(CONST.DRIVING_LANES)-1
         # apply cost of action
         self.reward = CONST.ACTION_AND_COSTS[action][1]
 
@@ -109,7 +99,7 @@ class Car(pygame.sprite.Sprite):
     def updateSensors(self, obstacles):
         self.lidar.update(self.rect.centerx, self.rect.centery, math.degrees(self.heading), obstacles)
         self.sensor_data = self.lidar.onehot
-        self.tail_gaiting = self.lidar.tail_gating
+#        self.tail_gaiting = self.lidar.tail_gating
     
     def isAtGoal(self):
         self.at_goal = (self.rect.x > CONST.SCREEN_WIDTH) 
@@ -127,10 +117,8 @@ class Car(pygame.sprite.Sprite):
                 
         
     def isOutOfBounds(self):
-        if (self.rect.x < - CONST.SCREEN_PADDING or 
-        self.rect.y < 0 or 
-        self.rect.y > CONST.SCREEN_HEIGHT or
-        self.rect.x > CONST.SCREEN_WIDTH + CONST.SCREEN_PADDING):
+        if (self.rect.center[1] < (CONST.LANES[1] - CONST.LANE_WIDTH//2) or 
+        self.rect.center[1] > (CONST.LANES[3] + CONST.LANE_WIDTH//2)):
             self.out_of_bounds = True
     
     # applies control input and updates animation
@@ -157,7 +145,8 @@ class Car(pygame.sprite.Sprite):
        self.rect.x += self.velx
        self.rect.y -= self.vely
        
-       self.carrot = (self.rect.x + self.carrot_dist, CONST.LANES[self.lane_idx])
+       self.carrot = (self.rect.x + self.carrot_dist, CONST.DRIVING_LANES[self.lane_idx])
+       print("DRIVING_LANE: ", CONST.DRIVING_LANES[self.lane_idx])
        
        self.isOutOfBounds()
        #print("Heading", self.heading)

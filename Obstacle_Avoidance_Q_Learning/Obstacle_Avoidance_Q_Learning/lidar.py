@@ -69,7 +69,7 @@ class Lidar(pygame.sprite.Sprite):
             self.beams[i].update(anchorX, anchorY, anchor_deg, obstacle_list, sorted_idx_list, self) 
             
             if self.beams[i].dist < CONST.LIDAR_RANGE:
-                self.onehot[i][int(self.beams[i].dist / CONST.LIDAR_RES)] = 1
+                self.onehot[i][int(self.beams[i].dist / CONST.LIDAR_RES) -1] = 1
             
             if self.beams[i].dist < self.closest_dist:                              
                 self.closest_dist = self.beams[i].dist
