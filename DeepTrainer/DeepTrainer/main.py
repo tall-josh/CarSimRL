@@ -46,12 +46,12 @@ if load_data:
     with open("states0_file.txt", 'rb') as file:
         states0 = np.genfromtxt(file, dtype=float, delimiter=',')
         sp = states0.shape
-        states0 = np.reshape(states0, (sp[0]//50, 50, sp[1]))
+        states0 = np.reshape(states0, (sp[0]//CONST.LIDAR_COUNT, CONST.LIDAR_COUNT, sp[1]))
         file.close()
     with open("states1_file.txt", 'rb') as file:
         states1 = np.genfromtxt(file, dtype=float, delimiter=',')
         sp = states1.shape
-        states1 = np.reshape(states1, (sp[0]//50, 50, sp[1]))
+        states1 = np.reshape(states1, (sp[0]//CONST.LIDAR_COUNT, CONST.LIDAR_COUNT, sp[1]))
         file.close()
     with open("rewards_file.txt", 'rb') as file:
         rewards = np.genfromtxt(file, dtype=float, delimiter=',')
@@ -113,7 +113,7 @@ def initStaticObstacles(xPos, lanes):
     moving_obstacles = False
     for i in range(len(xPos)):
         obs = static_obs.StaticObstacle(xPos[i], CONST.LANES[lanes[i]],
-                                art.cars['gray'])
+                                art.cars['gray'] if lanes[i] < 3 else art.cars['blue_backwards'])
         all_sprites.add(obs)
         obstacles.add(obs)
 
@@ -156,8 +156,8 @@ def initSimulation(car, state, random_start = False, random_obs = False):
     
 #    random_start = random.randint(0,len(CONST.ACTION_NAMES)-1)
 #    random_start = random.randint(0,len(CONST.ACTION_NAMES)-1) if random_start == 3 else random_start
-    obs_x = [100,350,500]
-    obs_lanes = [1,2,3]
+    obs_x = [250,400, 100, 400, 500, 600, 400, 200]
+    obs_lanes = [1,3,2, 1, 4, 5, 6, 4]
     if random_obs:
         obs_x = np.random.uniform(low=200, high=CONST.SCREEN_WIDTH*0.8, size=3)
         obs_lanes = np.random.randint(low=1, high=4, size=3)
@@ -195,7 +195,7 @@ merge_count = 0
 
 while bears_shit_in_woods:
     
-    initSimulation(car, state, random_obs=True)
+    initSimulation(car, state, random_obs=False)
     pigs_fly = False
     ticks = 0
     run_count += 1
@@ -278,6 +278,8 @@ while bears_shit_in_woods:
             color = CONST.COLOR_WHITE
         pygame.draw.line(screen, CONST.COLOR_ORANGE, (0, CONST.LANES[len(CONST.LANES)-1] + CONST.LANE_WIDTH//2), (CONST.SCREEN_WIDTH,  CONST.LANES[len(CONST.LANES)-1] + CONST.LANE_WIDTH//2))
                 
+# Draw collision box
+        pygame.draw.circle(screen, CONST.COLOR_RED, (int(car.x), int(car.y)), 30, 2)
 #       Draw carrot
         pygame.draw.circle(screen, CONST.COLOR_ORANGE, (car.carrot), 5) 
         
@@ -291,18 +293,18 @@ while bears_shit_in_woods:
     
     if log_data:
         # Data Logging    
-            with open("states0_file.txt", 'ab') as file:
+            with open("states0_{0}.txt".format(datetime_tag), 'ab') as file:
                 for frame in states0:
                     np.savetxt(file, frame, delimiter=",", newline=os.linesep, header="", footer="", fmt='%.1f')
                 file.close() 
-            with open("actions_file.txt", 'ab') as file:
+            with open("actions_{0}.txt".format(datetime_tag), 'ab') as file:
                 np.savetxt(file, actions, delimiter=',', newline=os.linesep, header="", footer="", fmt='%1f')
                 file.close()
-            with open("rewards_file.txt", 'ab') as file:
+            with open("rewards_{0}.txt".format(datetime_tag), 'ab') as file:
 #                file.write("{0}, ".format(rewards))
                 np.savetxt(file, rewards, delimiter=',', newline=os.linesep, header="", footer="", fmt='%1f')
                 file.close() 
-            with open("states1_file.txt", 'ab') as file:
+            with open("states1_{0}.txt".format(datetime_tag), 'ab') as file:
                 for frame in states1:
                     np.savetxt(file, frame, delimiter=",", newline=os.linesep, header="", footer="", fmt='%.1f')
                 file.close()    

@@ -15,7 +15,7 @@ COLOR_WHITE = (255,255,255)
 COLOR_ORANGE = (255,102,0)
 COLOR_YELLOW = (255,255,0)
 
-CAR_LENGTH = 44 #length in pixles
+CAR_LENGTH = 44 #length in pixles (1pix approx 10cm)
 CAR_SAFE_BUBBLE = math.ceil(2*CAR_LENGTH)
 CELLS_PER_LANE = 6
 
