@@ -17,6 +17,8 @@ class Car(pygame.sprite.Sprite):
         self.rect.center = (xPos, CONST.LANES[lane_idx])
         self.carrot = (self.rect.x + 50, CONST.LANES[lane_idx])
         self.at_goal = False
+        self.x = self.rect.center[0]
+        self.y = self.rect.center[1]
         self.velx = 0
         self.vely = 0
         self.heading = 0
@@ -46,7 +48,7 @@ class Car(pygame.sprite.Sprite):
         self.speed = CONST.INIT_SPEED + 1
         self.carrot_dist = 100
         self.PID = (0.5, 0.1, 0)
-        self.delta_heading = 0
+        self.__integral = 0
         self.goal = self.rect.center[0] + 100
         self.goal_increment = 100
         self.goal_count = 1
@@ -91,8 +93,9 @@ class Car(pygame.sprite.Sprite):
         rad_to_carrot = math.atan2(dy,dx)
         delta_rad =  rad_to_carrot - self.heading
         delta_rad = math.atan2(math.sin(delta_rad), math.cos(delta_rad))
-        self.delta_heading += delta_rad
-        self.heading += (self.PID[0] * delta_rad) + (self.PID[1] * delta_time * delta_time * self.delta_heading) + (self.PID[2] * delta_rad/delta_time)
+        self.__integral += delta_rad
+        #self.heading = rad_to_carrot
+        self.heading += (self.PID[0] * delta_rad) + (self.PID[1] * delta_time * delta_time * self.__integral) + (self.PID[2] * delta_rad/delta_time)
 
     # Updates sensor data with and alocates 
     # reward s for obstale proximity
@@ -117,8 +120,8 @@ class Car(pygame.sprite.Sprite):
                 
         
     def isOutOfBounds(self):
-        if (self.rect.center[1] < (CONST.LANES[1] - CONST.LANE_WIDTH//2) or 
-        self.rect.center[1] > (CONST.LANES[3] + CONST.LANE_WIDTH//2)):
+        if (self.rect.center[1] < (CONST.LANES[0] - CONST.LANE_WIDTH//2) or 
+        self.rect.center[1] > (CONST.LANES[4] + CONST.LANE_WIDTH//2)):
             self.out_of_bounds = True
     
     # applies control input and updates animation
@@ -129,11 +132,11 @@ class Car(pygame.sprite.Sprite):
        if (self.speed > CONST.MAX_SPEED): self.speed = CONST.MAX_SPEED
        if (self.speed < 0): self.speed = 0
            
+       self.heading = math.atan2(math.sin(self.heading), math.cos(self.heading))
        self.velx = self.speed * (math.cos(self.heading))
        self.vely = self.speed * (math.sin(self.heading))
-           
-       self.heading = math.atan2(math.sin(self.heading), math.cos(self.heading))
-                
+       print("speed: {0}".format(self.speed))
+       print("velx: {0}, vely: {1}".format(self.velx, self.vely))
        #old centre to realign after rotation
        old_cen = self.rect.center
        
@@ -142,8 +145,10 @@ class Car(pygame.sprite.Sprite):
        self.rect = self.image.get_rect()
        self.rect.center = old_cen
         
-       self.rect.x += self.velx
-       self.rect.y -= self.vely
+       self.x += self.velx
+       self.y -= self.vely
+       
+       self.rect.center = (self.x, self.y)
        
        self.carrot = (self.rect.x + self.carrot_dist, CONST.DRIVING_LANES[self.lane_idx])
        

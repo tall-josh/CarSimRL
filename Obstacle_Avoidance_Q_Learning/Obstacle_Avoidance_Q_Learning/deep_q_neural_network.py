@@ -139,21 +139,21 @@ except:
         
 # Conv Layer 1
 filter_sz1 = 3#5
-num_filters1 = 5#16
+num_filters1 = 16#16
 
 # Conv Layer 2
-filter_sz2 = 5#5
-num_filters2 = 10#36
+filter_sz2 = 3#5
+num_filters2 = 32#36
 
 # Conv Layer 3
 filter_sz3 = 5#5
-num_filters3 = 15#36
+num_filters3 = 64#36
 
 # Fully connected
-fc1_size = 100#128
+fc1_size = 256#128
 
 # Fully connected
-fc2_size = 50#128
+#fc2_size = 128#128
 
 ##### Data dimentions #####
 image_size = CONST.STATE_MATRIX_SIZE      
@@ -163,7 +163,7 @@ num_classes = 5
 # placeholders for input nodes
 state_mat = tf.placeholder(tf.float32, shape=[None, image_size[0], image_size[1], num_channels], name = 'state_mat')
 
-q_matrix = tf.placeholder(tf.float32, shape=[None, num_classes], name = 'q_matrix')
+#q_matrix = tf.placeholder(tf.float32, shape=[None, num_classes], name = 'q_matrix')
 
 q_target = tf.placeholder(tf.float32, shape=[None, num_classes], name = 'q_target')
 
@@ -188,24 +188,24 @@ with tf.name_scope("CONV_3"):
 with tf.name_scope("Flatten"):    
     layer_flat, num_features = flatten_layer(layer_conv3)
 
-   
+
 layer_fc1 = new_fc_layer(prev_layer = layer_flat,
                          num_inputs = num_features,
                          num_outputs = fc1_size,
                          use_relu=True,
                          layer_name = "FC_1")
 
-layer_fc2 = new_fc_layer(prev_layer = layer_fc1,
+q_matrix = new_fc_layer(prev_layer = layer_fc1,
                          num_inputs = fc1_size,
-                         num_outputs = fc2_size,
+                         num_outputs = num_classes,
                          use_relu=True,
-                         layer_name = "FC_2")
-
-q_matrix = new_fc_layer(prev_layer=layer_fc2,
-                         num_inputs=fc2_size,
-                         num_outputs=num_classes,
-                         use_relu=False,
-                         layer_name = "FC_3")
+                         layer_name = "q_matrix")
+#
+#q_matrix = new_fc_layer(prev_layer=layer_fc2,
+#                         num_inputs=fc2_size,
+#                         num_outputs=num_classes,
+#                         use_relu=False,
+#                         layer_name = "FC_3")
 
 ##### CLASS PREDICTION #####
 with tf.name_scope("cost"):
@@ -215,7 +215,7 @@ with tf.name_scope("cost"):
     tf.summary.scalar("cost", cost)
 
 saver = tf.train.Saver()
-save_dir = 'delete_me/'
+save_dir = 'checkpoint10/'
 if not os.path.exists(save_dir):
     os.makedirs(save_dir)
     
@@ -223,7 +223,7 @@ save_path = os.path.join(save_dir, 'values')
 session = tf.Session()
 
 merged_summ = tf.summary.merge_all()
-writer = tf.summary.FileWriter("delete_me/", session.graph)
+writer = tf.summary.FileWriter("logs10/", session.graph)
 session.run(tf.global_variables_initializer())
 
 def getQMat(state_in):
@@ -247,14 +247,20 @@ def fitBatch(batch_state, batch_target, save=False, verbose=False, iteration_cou
     state_action_dict = {state_mat: state_feed, q_target: q_feed}  
     
     if verbose:
-        loss = session.run([cost, optimizer], feed_dict = state_action_dict)
-        print("Loss: {0}, iteration: {1}".format(loss, iteration_count))
+        for i in range(20):
+            if i == 0:
+                loss = session.run([cost, optimizer], feed_dict = state_action_dict)
+                print("Loss: {0}, iteration: {1}".format(loss, iteration_count))
+            else:
+                session.run(optimizer, feed_dict = state_action_dict)
+        
 #       print("State_Feed: ", state_feed)
 #        print("Q_feed: ", q_feed)
         result = session.run(merged_summ, feed_dict = state_action_dict)
         writer.add_summary(result, iteration_count)
-    else: 
-        session.run(optimizer, feed_dict = state_action_dict)
+    else:
+        for i in range(20):
+            session.run(optimizer, feed_dict = state_action_dict)
         
     if save:
         print("Saving. iteration: ", iteration_count)
