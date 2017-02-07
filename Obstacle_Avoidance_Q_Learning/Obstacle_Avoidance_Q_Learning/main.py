@@ -19,15 +19,22 @@ import copy
 import deep_q_neural_network as dqnn
 import tensorflow as tf
 import static_obstacle as static_obs
+import data_logging as log
 
-log_data = False
+log_data = True
+load_data = False
+assert not (log_data and load_data), "Cannot log and load at the same time."
+fileNames = {"states0" : "states0_{0}.txt".format("STAGE2_240Lidar"),
+             "actions" : "actions_{0}.txt".format("STAGE2_240Lidar"),
+             "rewards" : "rewards_{0}.txt".format("STAGE2_240Lidar"),
+             "states1" : "states1_{0}.txt".format("STAGE2_240Lidar")}
+states0 = []
+rewards = []
+actions = []
+states1 = []
+toLog = [states0, rewards, actions, states1]
 if log_data:
-    file_states = open("states_file.txt", 'w')
-    file_states.close()
-    file_states = open("actions_file.txt", 'w')
-    file_states.close()
-    file_states = open("rewards_file.txt", 'w')
-    file_states.close()
+    log.logDataInit(fileNames)
 
 try:
     tf.reset_default_graph()
@@ -61,11 +68,6 @@ all_sprites.add(car)
 
 # initalise
 state = st.StateTracker()
-
-# data logging
-states = []
-actions = []
-rewards = []
 
 def doObsMerge(merge_count):
     if ( (random.uniform(0,1) < CONST.MERGE_PROB) and
@@ -118,7 +120,7 @@ def initObstacles(num_l_to_r, num_r_to_l):
 
 
 
-def initSimulation(car, state, filling_buffer = False):
+def initSimulation(car, state, filling_buffer = False, x_dist = 0, lane=2):
 
     global obstacels
     global all_sprites
@@ -131,23 +133,31 @@ def initSimulation(car, state, filling_buffer = False):
     
 #    random_start = random.randint(0,len(CONST.ACTION_NAMES)-1)
 #    random_start = random.randint(0,len(CONST.ACTION_NAMES)-1) if random_start == 3 else random_start
-    obs_x = [100,350,500]
-    obs_lanes = [1,2,3]
-    rand_x = random.uniform(0, CONST.SCREEN_WIDTH*0.75)
-    rand_y = random.randint(1,3)
-
-    valid = False
-    while not valid:
-        valid = not ((rand_y == 1 and abs(rand_x - obs_x[1-1]) < 1.5*CONST.CAR_SAFE_BUBBLE) or
-                     (rand_y == 2 and abs(rand_x - obs_x[2-1]) < 1.5*CONST.CAR_SAFE_BUBBLE) or
-                     (rand_y == 3 and abs(rand_x - obs_x[3-1]) < 1.5*CONST.CAR_SAFE_BUBBLE))
-        rand_x = random.uniform(0, CONST.SCREEN_WIDTH*0.75)
-        rand_y = random.randint(1,3)
-        
+    obs_x = [200]
+    obs_lanes = [2]
+#    rand_x = random.uniform(0, CONST.SCREEN_WIDTH*0.75)
+#    rand_y = random.randint(1,3)
+#
+#    valid = False
+#    while not valid:
+#        valid = not ((rand_y == 1 and abs(rand_x - obs_x[1-1]) < 1.5*CONST.CAR_SAFE_BUBBLE) or
+#                     (rand_y == 2 and abs(rand_x - obs_x[2-1]) < 1.5*CONST.CAR_SAFE_BUBBLE) or
+#                     (rand_y == 3 and abs(rand_x - obs_x[3-1]) < 1.5*CONST.CAR_SAFE_BUBBLE))
+#        rand_x = random.uniform(0, CONST.SCREEN_WIDTH*0.75)
+#        rand_y = random.randint(1,3)
+#        
+#    if filling_buffer:
+#        car.reInit(rand_x, rand_y)
+#    else:
+    lane = 2
+    x_dist = 0
     if filling_buffer:
-        car.reInit(rand_x, rand_y)
-    else:
-        car.reInit(0, 2)
+        lane = random.randint(1,3)
+        x_dist = int(random.uniform(0,0.5)*CONST.SCREEN_WIDTH)
+        while ((lane == 2) and abs(x_dist - obs_x[0]) < CONST.CAR_SAFE_BUBBLE):
+            x_dist = int(random.uniform(0,0.5)*CONST.SCREEN_WIDTH)
+
+    car.reInit(x_dist, lane)
 
     #initObstacles(CONST.OBS_L_TO_R,CONST.OBS_R_TO_L)
     initStaticObstacles(xPos=obs_x, lanes=obs_lanes)
@@ -165,7 +175,7 @@ gamma = 0.9
 epsilon = 1
 leave_program = False
 batch_size = 30
-buffer = 50
+buffer = 30000
 replay = []
 h = 0
 reward = 0
@@ -185,15 +195,17 @@ for i in range(epochs):
 
 # Returns quality estimates for all posiable actions
         qMatrix = dqnn.getQMat(state.state)
-        state_0 = state.state
-
+        state_0 = copy.deepcopy(state.state)
+        print("q_matrix: ", qMatrix)
 ##### SELECT ACTION #####
 # Select random action or use best action from qMatrix
         action_idx = 0
         if (random.random() < epsilon):
             action_idx = random.randint(0,len(CONST.ACTION_AND_COSTS)-1)
+            print("random action: ", CONST.ACTION_NAMES[action_idx])
         else:
             action_idx = np.argmax(qMatrix)
+            print("selected action: ", CONST.ACTION_NAMES[action_idx])
 
 ##### Take action #####
 #        car.updateAction(2)   # apply action selected above
@@ -209,6 +221,7 @@ for i in range(epochs):
         next_qMatrix = dqnn.getQMat(state.state)
 
         reward = car.reward
+        print("reward: ", reward)
 # Check for terminal states and override
 # Reward to teminal values if necessary
 #        if car.tail_gaiting:
@@ -226,26 +239,35 @@ for i in range(epochs):
         if (collisions or car.out_of_bounds):
             pigs_fly = True
             reward = CONST.REWARDS['terminal_crash']
+            print("terminal_crash*********************************************************************************")
             
-
         if car.isAtGoal():
             pigs_fly = True
             reward = CONST.REWARDS['terminal_goal']
             car.terminal = True
-        
-
+            print("terminal_goal!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+            
+        if frames_this_epoch > CONST.TAKING_TOO_LONG:
+            pigs_fly = True
+            print("RESET!!!!! TAKING TOO LONG!!!!!!!!!!!!!!!!!")
+        print("reward: ", reward)
         if len(replay) < buffer:
-            replay.append((state_0, action_idx, reward, copy.deepcopy(state.state)))
+            replay.append((copy.deepcopy(state_0), copy.deepcopy(action_idx), copy.deepcopy(reward), copy.deepcopy(state.state)))
+        
+            if log_data:
+                # Data Logging    
+                states0.append(copy.deepcopy(state_0))
+                actions.append(copy.deepcopy(action_idx))
+                rewards.append(copy.deepcopy(reward))
+                states1.append(copy.deepcopy(state.state))
+
             epoch_cnt =  0# keep epochs at zero until buffer if full
         else:
             CONST.SCREEN_FPS = 50
-            if h < (buffer-1):
-                h += 1
-            else:
-                h = 0
+            h = (h+1)%buffer
 
-            replay[h] = (state_0, action_idx, reward, copy.deepcopy(state.state))
-            print("action: {0}, reward: {1}, ".format(action_idx, reward))
+            replay.append((copy.deepcopy(state_0), copy.deepcopy(action_idx), copy.deepcopy(reward), copy.deepcopy(state.state)))
+#            print("action: {0}, reward: {1}, ".format(action_idx, reward))
             batch = random.sample(replay, batch_size)
             target_batch = []
             for element in batch:
@@ -333,6 +355,13 @@ for i in range(epochs):
     epoch_cnt += 1
     if epoch_cnt == epochs-1: epoch_cnt = epochs - 2 
     if leave_program: break
+    if log_data:
+        log.logData(fileNames, toLog)
+        # Data Logging    
+        states0.clear()
+        actions.clear()
+        rewards.clear()
+        states1.clear()
 
 dqnn.session.close()
 pygame.quit();

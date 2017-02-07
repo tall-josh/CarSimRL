@@ -17,7 +17,7 @@ COLOR_YELLOW = (255,255,0)
 
 CAR_LENGTH = 44 #length in pixles
 CAR_SAFE_BUBBLE = math.ceil(2*CAR_LENGTH)
-CELLS_PER_LANE = 6
+CELLS_PER_LANE = 3
 
 #screen
 SCREEN_WIDTH = math.ceil(CELLS_PER_LANE*CAR_SAFE_BUBBLE)  #keep in multaples of car_safe_bubble so to make occupancy grid uniform
@@ -69,8 +69,8 @@ MERGE_PROB = 0
 MAX_NO_MERGES = 4
 
 LIDAR_RANGE =  200
-LIDAR_COUNT = 20
-LIDAR_SWEEP = 359
+LIDAR_COUNT = 21
+LIDAR_SWEEP = 240
 LIDAR_RES = 3 # one pixle is approx 10cm
 LIDAR_STEP = LIDAR_SWEEP / (LIDAR_COUNT - 1)
 LIDAR_DATA_SIZE = (LIDAR_COUNT, (LIDAR_RANGE // LIDAR_RES))
@@ -108,10 +108,11 @@ ACTION_AND_COSTS = [('do_nothing',           0),
                     ('change_right',        -1),
                     ('break',               -1),
                     ('accelerate',          -1)]
-           
+                    
+TAKING_TOO_LONG = 300
 TAIL_GATE_DIST = LIDAR_RANGE*0.3                   
 REWARDS =           {'terminal_crash' :    -10,  
                      'terminal_goal'  :     10,  
-                     'on_sholder'     :    -5,  
-                     'tail_gate'      :    -5,
-                     'too_slow'       :    -5}
+                     'on_sholder'     :    0,  
+                     'tail_gate'      :    0,
+                     'too_slow'       :    0}
