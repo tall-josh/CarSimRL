@@ -156,8 +156,8 @@ def initSimulation(car, state, random_start = False, random_obs = False):
     
 #    random_start = random.randint(0,len(CONST.ACTION_NAMES)-1)
 #    random_start = random.randint(0,len(CONST.ACTION_NAMES)-1) if random_start == 3 else random_start
-    obs_x = [250,400, 100, 400, 500, 600, 400, 200]
-    obs_lanes = [1,3,2, 1, 4, 5, 6, 4]
+    obs_x = [250, 250, 250]
+    obs_lanes = [2,2,2]
     if random_obs:
         obs_x = np.random.uniform(low=200, high=CONST.SCREEN_WIDTH*0.8, size=3)
         obs_lanes = np.random.randint(low=1, high=4, size=3)
