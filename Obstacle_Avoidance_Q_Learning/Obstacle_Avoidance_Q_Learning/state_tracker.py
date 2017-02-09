@@ -12,7 +12,7 @@ class StateTracker():
         #keeping track of oldest state so I can remove it 
         #before inserting the most recent state
         self.frame_history = np.zeros(CONST.FRAME_HISTORY_SIZE)
-        
+        self.setLivePlot = False
         self.oldest_state_idx = 0
         self.idx_old_to_new = [i for i in range(len(self.frame_history))] #[0,1,2,..n]
         self.state = np.zeros(CONST.STATE_MATRIX_SIZE)
@@ -60,6 +60,7 @@ class StateTracker():
         patches = [mpatches.Patch(color=colors[i], label="Level {l}".format(l=values[i])) for i in range(len(values))]
         plt.legend(handles=patches, bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0. )
         plt.show()
+        if self.setLivePlot: plt.pause(0.1)
         
     
     def plotState(self, plt_state=True, plt_full_history=False):

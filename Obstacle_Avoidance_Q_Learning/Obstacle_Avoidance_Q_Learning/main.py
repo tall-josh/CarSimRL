@@ -21,7 +21,7 @@ import tensorflow as tf
 import static_obstacle as static_obs
 import data_logging as log
 
-log_data = True
+log_data = False
 load_data = False
 assert not (log_data and load_data), "Cannot log and load at the same time."
 fileNames = {"states0" : "states0_{0}.txt".format("STAGE2_180Lidar"),
@@ -127,6 +127,7 @@ def initSimulation(car, state, filling_buffer = False, x_dist = 0, lane=2):
     obstacles.empty()
     all_sprites.empty()
     all_sprites.add(car)
+    state.reset()
 
     # This is a super hacky way to try and bias away from initialising the car in 'breaking' state
     # when filling replay buffer
@@ -174,8 +175,8 @@ epoch_cnt = 0
 gamma = 0.9
 epsilon = 1
 leave_program = False
-batch_size = 30
-buffer = 30000
+batch_size = 10
+buffer = 300
 replay = []
 h = 0
 reward = 0
@@ -334,6 +335,11 @@ for i in range(epochs):
         for beam in car.lidar.beams:
             pygame.draw.line(screen, beam.color, (beam.x1, beam.y1), (car.rect.centerx, car.rect.centery))
 
+# Plot lidar data in console if state.setLivePlot
+        if state.setLivePlot:
+            state.plotState(True)
+            
+            
 ##### For if I decide to put some user input fuctionality  #####
 # Process input (events)
         for event in pygame.event.get():
@@ -342,7 +348,11 @@ for i in range(epochs):
                 pigs_fly = True
                 leave_program = True
                 dqnn.session.close()
-
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_p:
+                    state.setLivePlot = not state.setLivePlot  #toggle live plotting
+                    action_idx = 1
+            
         frames_this_epoch += 1
         total_frames += 1
         if total_frames % 100 == 0:
