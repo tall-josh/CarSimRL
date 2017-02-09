@@ -29,6 +29,7 @@ class Beam(pygame.sprite.Sprite):
 #                   select color for different ranges
                     if 0 < step <= CONST.LIDAR_RANGE * 0.25:
                         self.color = CONST.COLOR_RED
+                        if step <= 0: step = CONST.LIDAR_RES
                     if CONST.LIDAR_RANGE * 0.25 < step <= CONST.LIDAR_RANGE * 0.5:
                         self.color = CONST.COLOR_ORANGE
                     if CONST.LIDAR_RANGE * 0.5 < step <= CONST.LIDAR_RANGE * 0.75:

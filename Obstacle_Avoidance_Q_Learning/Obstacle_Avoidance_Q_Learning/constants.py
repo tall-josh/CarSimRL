@@ -70,13 +70,13 @@ MAX_NO_MERGES = 4
 
 LIDAR_RANGE =  200
 LIDAR_COUNT = 21
-LIDAR_SWEEP = 240
+LIDAR_SWEEP = 180
 LIDAR_RES = 3 # one pixle is approx 10cm
 LIDAR_STEP = LIDAR_SWEEP / (LIDAR_COUNT - 1)
 LIDAR_DATA_SIZE = (LIDAR_COUNT, (LIDAR_RANGE // LIDAR_RES))
 STATE_MATRIX_SIZE = LIDAR_DATA_SIZE
 STATE_MATRIX_FLAT_SZ = STATE_MATRIX_SIZE[0]*STATE_MATRIX_SIZE[1]
-HISTORY_WEIGHTS = [0.125, 0.25, 0.5, 1] #oldest to newest
+HISTORY_WEIGHTS = [0.125, 0.25, 0.5, 1.0] #oldest to newest
 HISTORY_DEPTH = 4
 FRAME_HISTORY_SIZE = (HISTORY_DEPTH, LIDAR_COUNT, (LIDAR_RANGE // LIDAR_RES))
 #
@@ -103,16 +103,16 @@ ACTION_NAMES = ['do_nothing',
                 'accelerate']
 
 
-ACTION_AND_COSTS = [('do_nothing',           0),
-                    ('change_left',         -1),
-                    ('change_right',        -1),
-                    ('break',               -1),
-                    ('accelerate',          -1)]
+ACTION_AND_COSTS = [('do_nothing',          1.1),
+                    ('change_left',         1),
+                    ('change_right',        1),
+                    ('break',               1),
+                    ('accelerate',          1)]
                     
 TAKING_TOO_LONG = 300
 TAIL_GATE_DIST = LIDAR_RANGE*0.3                   
 REWARDS =           {'terminal_crash' :    -10,  
-                     'terminal_goal'  :     10,  
+                     'terminal_goal'  :     00,  
                      'on_sholder'     :    0,  
                      'tail_gate'      :    0,
                      'too_slow'       :    0}

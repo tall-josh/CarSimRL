@@ -24,10 +24,10 @@ import data_logging as log
 log_data = True
 load_data = False
 assert not (log_data and load_data), "Cannot log and load at the same time."
-fileNames = {"states0" : "states0_{0}.txt".format("STAGE2_240Lidar"),
-             "actions" : "actions_{0}.txt".format("STAGE2_240Lidar"),
-             "rewards" : "rewards_{0}.txt".format("STAGE2_240Lidar"),
-             "states1" : "states1_{0}.txt".format("STAGE2_240Lidar")}
+fileNames = {"states0" : "states0_{0}.txt".format("STAGE2_180Lidar"),
+             "actions" : "actions_{0}.txt".format("STAGE2_180Lidar"),
+             "rewards" : "rewards_{0}.txt".format("STAGE2_180Lidar"),
+             "states1" : "states1_{0}.txt".format("STAGE2_180Lidar")}
 states0 = []
 rewards = []
 actions = []
@@ -188,6 +188,7 @@ for i in range(epochs):
     frames_this_epoch = 0
 
     while not pigs_fly:
+        print("FRAME: {0}".format(frames_this_epoch))
 #####  PYGAME HOUSE KEEPING  #####
 # Keep loop time constant
         clock.tick(CONST.SCREEN_FPS)
@@ -221,7 +222,6 @@ for i in range(epochs):
         next_qMatrix = dqnn.getQMat(state.state)
 
         reward = car.reward
-        print("reward: ", reward)
 # Check for terminal states and override
 # Reward to teminal values if necessary
 #        if car.tail_gaiting:

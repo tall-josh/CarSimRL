@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import tensorflow as tf
+from tensorflow.contrib import layers
 import numpy as np
 import constants as CONST
 import os
@@ -124,7 +125,7 @@ def new_fc_layer(prev_layer,          # The previous layer.
             # Use ReLU?
 #            if use_relu:
 #                layer = tf.nn.relu(layer)
-            layer = tf.nn.sigmoid(layer)
+            layer = tf.nn.relu(layer)
             
             
             tf.summary.histogram(layer_name+"_output", layer)
@@ -138,7 +139,7 @@ except:
     pass
         
 # Conv Layer 1
-filter_sz1 = 3#5
+filter_sz1 = 5#5
 num_filters1 = 16#16
 
 # Conv Layer 2
@@ -146,14 +147,13 @@ filter_sz2 = 3#5
 num_filters2 = 32#36
 
 # Conv Layer 3
-filter_sz3 = 5#5
+filter_sz3 = 3#5
 num_filters3 = 64#36
 
 # Fully connected
-fc1_size = 256#128
+fc1_size = 50#128
 
-# Fully connected
-#fc2_size = 128#128
+activation = tf.nn.relu
 
 ##### Data dimentions #####
 image_size = CONST.STATE_MATRIX_SIZE      
@@ -163,49 +163,45 @@ num_classes = 5
 # placeholders for input nodes
 state_mat = tf.placeholder(tf.float32, shape=[None, image_size[0], image_size[1], num_channels], name = 'state_mat')
 
-#q_matrix = tf.placeholder(tf.float32, shape=[None, num_classes], name = 'q_matrix')
-
 q_target = tf.placeholder(tf.float32, shape=[None, num_classes], name = 'q_target')
 
 with tf.name_scope("CONV_1"):
-    layer_conv1, weights_conv1 = new_conv_layer(prev_layer=state_mat,
-                                                     num_input_channels = num_channels,
-                                                     filter_size = filter_sz1,
-                                                     num_filters=num_filters1,
-                                                     use_pooling=False)
+    layer_conv1 = layers.convolution2d(state_mat, num_outputs=num_filters1,
+                                       kernel_size=filter_sz1,
+                                       activation_fn=activation,
+                                       scope='CONV_1')
+    layer_conv1_mp = layers.max_pool2d(layer_conv1, 2)
+
 with tf.name_scope("CONV_2"):
-    layer_conv2, weights_conv2 = new_conv_layer(prev_layer=layer_conv1,
-                                                     num_input_channels = num_filters1,
-                                                     filter_size = filter_sz2,
-                                                     num_filters=num_filters2,
-                                                     use_pooling=True)
+    layer_conv2 = layers.convolution2d(layer_conv1_mp, num_outputs=num_filters2,
+                                           kernel_size=filter_sz2,
+                                           activation_fn=activation,
+                                           scope='CONV_2')
+    layer_conv2_mp = layers.max_pool2d(layer_conv2, 2)
+
 with tf.name_scope("CONV_3"):    
-    layer_conv3, weights_conv3 = new_conv_layer(prev_layer=layer_conv2,
-                                                     num_input_channels = num_filters2,
-                                                     filter_size = filter_sz3,
-                                                     num_filters=num_filters3,
-                                                     use_pooling=True)
+    layer_conv3 = layers.convolution2d(layer_conv2_mp, num_outputs=num_filters3,
+                                           kernel_size=filter_sz3,
+                                           activation_fn=activation,
+                                           scope='CONV_3')
+
 with tf.name_scope("Flatten"):    
     layer_flat, num_features = flatten_layer(layer_conv3)
 
+with tf.name_scope("FC_1"):        
+    layer_fc1 = new_fc_layer(prev_layer = layer_flat,
+                             num_inputs = num_features,
+                             num_outputs = fc1_size,
+                             use_relu=True,
+                             layer_name = "FC_1")
 
-layer_fc1 = new_fc_layer(prev_layer = layer_flat,
-                         num_inputs = num_features,
-                         num_outputs = fc1_size,
-                         use_relu=True,
-                         layer_name = "FC_1")
+with tf.name_scope("Q_matrix"):   
+    q_matrix = new_fc_layer(prev_layer = layer_fc1,
+                             num_inputs = fc1_size,
+                             num_outputs = num_classes,
+                             use_relu=False,
+                             layer_name = "q_matrix")
 
-q_matrix = new_fc_layer(prev_layer = layer_fc1,
-                         num_inputs = fc1_size,
-                         num_outputs = num_classes,
-                         use_relu=True,
-                         layer_name = "q_matrix")
-#
-#q_matrix = new_fc_layer(prev_layer=layer_fc2,
-#                         num_inputs=fc2_size,
-#                         num_outputs=num_classes,
-#                         use_relu=False,
-#                         layer_name = "FC_3")
 
 ##### CLASS PREDICTION #####
 with tf.name_scope("cost"):
@@ -215,7 +211,7 @@ with tf.name_scope("cost"):
     tf.summary.scalar("cost", cost)
 
 saver = tf.train.Saver()
-save_dir = 'checkpoint10/'
+save_dir = 'SYB_1/'
 if not os.path.exists(save_dir):
     os.makedirs(save_dir)
     
@@ -223,7 +219,7 @@ save_path = os.path.join(save_dir, 'values')
 session = tf.Session()
 
 merged_summ = tf.summary.merge_all()
-writer = tf.summary.FileWriter("logs10/", session.graph)
+writer = tf.summary.FileWriter("SYB_L1/", session.graph)
 session.run(tf.global_variables_initializer())
 
 def getQMat(state_in):
