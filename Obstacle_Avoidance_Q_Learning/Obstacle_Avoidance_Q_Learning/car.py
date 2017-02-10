@@ -121,7 +121,7 @@ class Car(pygame.sprite.Sprite):
         
     def isOutOfBounds(self):
         if (self.rect.center[1] < (CONST.LANES[0] - CONST.LANE_WIDTH//2) or 
-        self.rect.center[1] > (CONST.LANES[4] + CONST.LANE_WIDTH//2)):
+        self.rect.center[1] > (CONST.LANES[3] + CONST.LANE_WIDTH//2)):
             self.out_of_bounds = True
     
     # applies control input and updates animation
@@ -135,8 +135,8 @@ class Car(pygame.sprite.Sprite):
        self.heading = math.atan2(math.sin(self.heading), math.cos(self.heading))
        self.velx = self.speed * (math.cos(self.heading))
        self.vely = self.speed * (math.sin(self.heading))
-       print("speed: {0}".format(self.speed))
-       print("velx: {0}, vely: {1}".format(self.velx, self.vely))
+#       print("speed: {0}".format(self.speed))
+#       print("velx: {0}, vely: {1}".format(self.velx, self.vely))
        #old centre to realign after rotation
        old_cen = self.rect.center
        

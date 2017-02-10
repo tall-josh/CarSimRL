@@ -32,38 +32,28 @@ class StateTracker():
     # new_scan is a 2d numpy array representing the lidar one_hot array
     def update(self, new_scan):
         
-        #plt.imshow(new_scan, cmap=plt.cm.hot)
-        #new_scan = new_scan.flatten()
-        # sutract oldest scan fron state
-#        self.state -= self.frame_history[self.oldest_state_idx]
-        
-        # superimpose new_scan into state matrix
-#        self.state += new_scan
-        
         # replace oldest scan with new_scan
         self.frame_history[self.oldest_state_idx] = new_scan
+        self.state *= 0.5
+        self.state += new_scan
+        np.clip(self.state, 0.125, 1, out=self.state)
         
-        self.state = np.zeros(self.state.shape)       
-        weight_idx = 0
-        for frame in self.frame_history:
-            self.state += frame*CONST.HISTORY_WEIGHTS[weight_idx]
-            weight_idx += 1
         # increment olderst_scan_idx
         self.oldest_state_idx = (self.oldest_state_idx - 1) % len(self.frame_history)
         for idx in self.idx_old_to_new:
             idx = (idx + 1) % len(self.idx_old_to_new)
     
-    def __plotFrame(self, data):
+    def __plotFrame(self, data, legend=False):
         values = np.unique(data.ravel())
         im = plt.imshow(data, interpolation='none')
         colors = [im.cmap(im.norm(value)) for value in values]
         patches = [mpatches.Patch(color=colors[i], label="Level {l}".format(l=values[i])) for i in range(len(values))]
-        plt.legend(handles=patches, bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0. )
+        if legend: plt.legend(handles=patches, bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0. )
         plt.show()
         if self.setLivePlot: plt.pause(0.1)
         
     
-    def plotState(self, plt_state=True, plt_full_history=False):
+    def plotState(self, plt_state=True, plt_full_history=False, legend=False):
         if plt_state:
             self.__plotFrame(self.state)
             

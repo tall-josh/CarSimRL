@@ -20,14 +20,16 @@ import deep_q_neural_network as dqnn
 import tensorflow as tf
 import static_obstacle as static_obs
 import data_logging as log
+import os
 
-log_data = False
+log_data = True
 load_data = False
 assert not (log_data and load_data), "Cannot log and load at the same time."
-fileNames = {"states0" : "states0_{0}.txt".format("STAGE2_180Lidar"),
-             "actions" : "actions_{0}.txt".format("STAGE2_180Lidar"),
-             "rewards" : "rewards_{0}.txt".format("STAGE2_180Lidar"),
-             "states1" : "states1_{0}.txt".format("STAGE2_180Lidar")}
+log_tag = "STAGE2_L150_21B"
+fileNames = {"states0" : "states0_{0}.txt".format(log_tag),
+             "actions" : "actions_{0}.txt".format(log_tag),
+             "rewards" : "rewards_{0}.txt".format(log_tag),
+             "states1" : "states1_{0}.txt".format(log_tag)}
 states0 = []
 rewards = []
 actions = []
@@ -134,7 +136,7 @@ def initSimulation(car, state, filling_buffer = False, x_dist = 0, lane=2):
     
 #    random_start = random.randint(0,len(CONST.ACTION_NAMES)-1)
 #    random_start = random.randint(0,len(CONST.ACTION_NAMES)-1) if random_start == 3 else random_start
-    obs_x = [200]
+    obs_x = [220]
     obs_lanes = [2]
 #    rand_x = random.uniform(0, CONST.SCREEN_WIDTH*0.75)
 #    rand_y = random.randint(1,3)
@@ -155,7 +157,7 @@ def initSimulation(car, state, filling_buffer = False, x_dist = 0, lane=2):
     if filling_buffer:
         lane = random.randint(1,3)
         x_dist = int(random.uniform(0,0.5)*CONST.SCREEN_WIDTH)
-        while ((lane == 2) and abs(x_dist - obs_x[0]) < CONST.CAR_SAFE_BUBBLE):
+        while (lane == 2 and abs(x_dist - obs_x[0]) < CONST.CAR_SAFE_BUBBLE):
             x_dist = int(random.uniform(0,0.5)*CONST.SCREEN_WIDTH)
 
     car.reInit(x_dist, lane)
@@ -175,21 +177,22 @@ epoch_cnt = 0
 gamma = 0.9
 epsilon = 1
 leave_program = False
-batch_size = 10
-buffer = 300
+batch_size = 30
+buffer = 30000
 replay = []
 h = 0
 reward = 0
-qMax = 0
+__console_data_print_frequency = 100
 
 for i in range(epochs):
-
+    
     initSimulation(car, state, filling_buffer = True if len(replay) < buffer else False)
     pigs_fly = False
     frames_this_epoch = 0
 
     while not pigs_fly:
-        print("FRAME: {0}".format(frames_this_epoch))
+        __console_string = ""
+        __console_string += "FRAME: {0} -- ".format(frames_this_epoch)
 #####  PYGAME HOUSE KEEPING  #####
 # Keep loop time constant
         clock.tick(CONST.SCREEN_FPS)
@@ -198,16 +201,15 @@ for i in range(epochs):
 # Returns quality estimates for all posiable actions
         qMatrix = dqnn.getQMat(state.state)
         state_0 = copy.deepcopy(state.state)
-        print("q_matrix: ", qMatrix)
 ##### SELECT ACTION #####
 # Select random action or use best action from qMatrix
         action_idx = 0
         if (random.random() < epsilon):
             action_idx = random.randint(0,len(CONST.ACTION_AND_COSTS)-1)
-            print("random action: ", CONST.ACTION_NAMES[action_idx])
+            __console_string += "random action: {0} -- ".format(CONST.ACTION_NAMES[action_idx])
         else:
             action_idx = np.argmax(qMatrix)
-            print("selected action: ", CONST.ACTION_NAMES[action_idx])
+            __console_string += "selected action: {0} -- ".format(CONST.ACTION_NAMES[action_idx])
 
 ##### Take action #####
 #        car.updateAction(2)   # apply action selected above
@@ -251,7 +253,8 @@ for i in range(epochs):
         if frames_this_epoch > CONST.TAKING_TOO_LONG:
             pigs_fly = True
             print("RESET!!!!! TAKING TOO LONG!!!!!!!!!!!!!!!!!")
-        print("reward: ", reward)
+        __console_string += "Reward: {0} -- Epsilon: {1} -- Epoch: {2} -- Total_Frames: {3}".format(reward, epsilon, epoch_cnt, total_frames)
+        
         if len(replay) < buffer:
             replay.append((copy.deepcopy(state_0), copy.deepcopy(action_idx), copy.deepcopy(reward), copy.deepcopy(state.state)))
         
@@ -279,28 +282,29 @@ for i in range(epochs):
 
                 q_mat_new = dqnn.getQMat(replay_new_state)[0]
                 q_val_new = max(q_mat_new)
-                if (replay_reward == -10 or 
+                ## NEED TO MAKE MORE ELEGENT!!!
+                if (replay_reward == -100 or 
                     replay_reward == -5 or
                     replay_reward == 10):
                     q_update = replay_reward
                 else:
                     q_update = replay_reward + (gamma*q_val_new)
                 y[replay_action_idx] = q_update
-                if total_frames % 100 == 0:
-                    print("Y: {0}, idx: {1}, target: {2} (ori: {3}), epsilon: {4}".format(y, replay_action_idx, q_update, q_val_new, epsilon))
-                    print("epoch_cnt: ", epoch_cnt)
+#                if total_frames % 100 == 0:
+#                    print("Y: {0}, idx: {1}, target: {2} (ori: {3}), epsilon: {4}".format(y, replay_action_idx, q_update, q_val_new, epsilon))
+#                    print("epoch_cnt: ", epoch_cnt)
                     
                 target_batch.append(y)
 
 
             if total_frames % 100 == 0:
                 dqnn.fitBatch([row[0] for row in batch], target_batch, save=False, verbose=True, iteration_count=total_frames-buffer)
-            elif total_frames % 1001 == 0:
+            elif total_frames % 10001 == 0:
                 dqnn.fitBatch([row[0] for row in batch], target_batch, save=True, verbose=False, iteration_count=total_frames-buffer)
             else:
-                dqnn.fitBatch([row[0] for row in batch], target_batch, save=False)
+                dqnn.fitBatch([row[0] for row in batch], target_batch)
 
-            if epsilon > 0.1:
+            if epsilon > 0.1 and epochs > 0 and total_frames % 100 == 0:
                 epsilon -= 1/epochs
 
 #        doObsMerge(merge_count)
@@ -337,6 +341,7 @@ for i in range(epochs):
 
 # Plot lidar data in console if state.setLivePlot
         if state.setLivePlot:
+            print("PLOTTING")
             state.plotState(True)
             
             
@@ -352,15 +357,37 @@ for i in range(epochs):
                 if event.key == pygame.K_p:
                     state.setLivePlot = not state.setLivePlot  #toggle live plotting
                     action_idx = 1
+                if event.key == pygame.K_UP:
+                    __console_data_print_frequency += 1
+                    print("Print Frequ every {0} frames".format(__console_data_print_frequency))
+                if event.key == pygame.K_DOWN:
+                    __console_data_print_frequency -= 1
+                    print("Print Frequ every {0} frames".format(__console_data_print_frequency))
+                if event.key == pygame.K_RIGHT:
+                    __console_data_print_frequency += 10
+                    print("Print Frequ every {0} frames".format(__console_data_print_frequency))
+                if event.key == pygame.K_LEFT:
+                    __console_data_print_frequency -= 10
+                    print("Print Frequ every {0} frames".format(__console_data_print_frequency))
+                if event.key == pygame.K_q:
+                    epsilon += 0.05
+                    if epsilon > 1: epsilon = 1
+                    print("Epsilon now: {0}".format(epsilon))
+                if event.key == pygame.K_a:
+                    epsilon -= 0.05
+                    if epsilon < 0.1: epsilon = 0.1
+                    print("Epsilon now: {0}".format(epsilon))
             
+        if __console_data_print_frequency <= 0: __console_data_print_frequency = 1
+        
+        if total_frames % __console_data_print_frequency == 0:
+            print(__console_string, os.linesep)
+            print("q_matrix: {0} -- ".format(qMatrix))
+            print("_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _", os.linesep)
         frames_this_epoch += 1
         total_frames += 1
-        if total_frames % 100 == 0:
-            print("total_frames: ", total_frames)
 # After everything, flip display
         pygame.display.flip()
-
-
 
     epoch_cnt += 1
     if epoch_cnt == epochs-1: epoch_cnt = epochs - 2 
