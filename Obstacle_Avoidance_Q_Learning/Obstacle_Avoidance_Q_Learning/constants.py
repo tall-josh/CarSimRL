@@ -103,7 +103,7 @@ ACTION_NAMES = ['do_nothing',
                 'accelerate']
 
 
-ACTION_AND_COSTS = [('do_nothing',          1.1),
+ACTION_AND_COSTS = [('do_nothing',          1),
                     ('change_left',         1),
                     ('change_right',        1),
                     ('break',               1),
@@ -111,7 +111,7 @@ ACTION_AND_COSTS = [('do_nothing',          1.1),
                     
 TAKING_TOO_LONG = 300
 TAIL_GATE_DIST = LIDAR_RANGE*0.3                   
-REWARDS =           {'terminal_crash' :    -100,  
+REWARDS =           {'terminal_crash' :    -1,  
                      'terminal_goal'  :     0,  
                      'on_sholder'     :     0,  
                      'tail_gate'      :     0,

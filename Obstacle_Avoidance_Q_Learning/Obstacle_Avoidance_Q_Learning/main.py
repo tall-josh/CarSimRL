@@ -22,7 +22,7 @@ import static_obstacle as static_obs
 import data_logging as log
 import os
 
-log_data = True
+log_data = False
 load_data = False
 assert not (log_data and load_data), "Cannot log and load at the same time."
 log_tag = "STAGE2_L150_21B"
@@ -215,6 +215,7 @@ for i in range(epochs):
 #        car.updateAction(2)   # apply action selected above
         car.updateAction(action_idx)   # apply action selected above
         all_sprites.update()                                               # Pygame updating sprites
+        __console_string += "speed: {0} -- ".format(car.speed)
         collisions = pygame.sprite.spritecollide(car, obstacles, False)    # Check for agent obstacle collisions
 
 ##### Observe new state (s') #####
@@ -283,9 +284,7 @@ for i in range(epochs):
                 q_mat_new = dqnn.getQMat(replay_new_state)[0]
                 q_val_new = max(q_mat_new)
                 ## NEED TO MAKE MORE ELEGENT!!!
-                if (replay_reward == -100 or 
-                    replay_reward == -5 or
-                    replay_reward == 10):
+                if (replay_reward == -1):
                     q_update = replay_reward
                 else:
                     q_update = replay_reward + (gamma*q_val_new)
@@ -304,10 +303,9 @@ for i in range(epochs):
             else:
                 dqnn.fitBatch([row[0] for row in batch], target_batch)
 
-            if epsilon > 0.1 and epochs > 0 and total_frames % 100 == 0:
-                epsilon -= 1/epochs
+            if epsilon > 0.1:
+                epsilon -= 1/100000
 
-#        doObsMerge(merge_count)
 
 ##### MORE PYGAME HOUSE KEEPING #####
 # Respawn obstacles if they are - CONST. out of range

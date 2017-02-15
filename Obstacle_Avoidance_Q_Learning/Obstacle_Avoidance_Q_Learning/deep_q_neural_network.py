@@ -145,7 +145,7 @@ with tf.name_scope("max_Q"):
     tf.summary.scalar("Q_MAX", max_Q)
 
 saver = tf.train.Saver()
-save_dir = 'SYB_2/'
+save_dir = 'SYB_4/'
 if not os.path.exists(save_dir):
     os.makedirs(save_dir)
     
@@ -153,7 +153,7 @@ save_path = os.path.join(save_dir, 'values')
 session = tf.Session()
 
 merged_summ = tf.summary.merge_all()
-writer = tf.summary.FileWriter("SYB_L2/", session.graph)
+writer = tf.summary.FileWriter("SYB_L4/", session.graph)
 session.run(tf.global_variables_initializer())
 
 def getQMat(state_in):

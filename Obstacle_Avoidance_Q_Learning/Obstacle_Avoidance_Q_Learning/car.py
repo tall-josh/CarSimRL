@@ -84,7 +84,9 @@ class Car(pygame.sprite.Sprite):
         if self.lane_idx < 0: self.lane_idx = 0
         if self.lane_idx > len(CONST.DRIVING_LANES)-1: self.lane_idx = len(CONST.DRIVING_LANES)-1
         # apply cost of action
-        self.reward = CONST.ACTION_AND_COSTS[action][1]
+        self.reward = (CONST.ACTION_AND_COSTS[action][1])
+        reward_reduction = 1 - (abs(self.speed - CONST.INIT_SPEED)/CONST.INIT_SPEED)
+        self.reward *= reward_reduction
 
     # Exhibits the go to goal behaviour         
     def doPID(self, delta_time):
